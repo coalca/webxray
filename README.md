@@ -41,7 +41,7 @@ docker compose up -d --build
 ghcr.io/<GitHub 用户名>/webxray:<提交日期>
 ```
 
-镜像版本使用触发构建的提交日期，格式为 `YYYY-MM-DD`；不发布 `latest`
+镜像版本使用触发构建的提交日期，格式为 `YYMMDD`，例如 `260724`；不发布 `latest`
 或提交 SHA 标签。OCI 修订标签仍记录精确提交，便于追溯构建来源。
 
 默认端口：

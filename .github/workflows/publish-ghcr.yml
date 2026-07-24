@@ -24,7 +24,7 @@ jobs:
       - name: Read commit version
         id: version
         run: |
-          version="$(git show -s --format=%cs "$GITHUB_SHA")"
+          version="$(git show -s --date=format:%y%m%d --format=%cd "$GITHUB_SHA")"
           created="$(git show -s --format=%cI "$GITHUB_SHA")"
           test -n "$version"
           test -n "$created"
