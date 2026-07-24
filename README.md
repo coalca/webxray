@@ -33,6 +33,17 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+## GHCR 镜像
+
+推送到 `main` 会由 GitHub Actions 构建并发布镜像到：
+
+```text
+ghcr.io/<GitHub 用户名>/webxray:<提交日期>
+```
+
+镜像版本使用触发构建的提交日期，格式为 `YYYY-MM-DD`；不发布 `latest`
+或提交 SHA 标签。OCI 修订标签仍记录精确提交，便于追溯构建来源。
+
 默认端口：
 
 - API：`http://服务器地址:3000/api`
