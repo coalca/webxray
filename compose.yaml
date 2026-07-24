@@ -3,18 +3,21 @@ services:
     build:
       context: .
       args:
-        XRAY_IMAGE: ${XRAY_IMAGE:-ghcr.io/xtls/xray-core:latest}
+        XRAY_IMAGE: ${XRAY_IMAGE:-ghcr.io/xtls/xray-core:26.7.11}
         NODE_IMAGE: ${NODE_IMAGE:-node:24-alpine}
     image: webxray:local
     container_name: webxray
     restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
     environment:
       TZ: ${TZ:-Asia/Shanghai}
+      WEBXRAY_PORT: ${WEBXRAY_API_PORT:-3000}
       WEBXRAY_AUTH_TOKEN: ${WEBXRAY_AUTH_TOKEN:?Set WEBXRAY_AUTH_TOKEN in .env}
-    ports:
-      - "${WEBXRAY_WEB_PORT:-3000}:3000"
-      - "${WEBXRAY_PROXY_PORT:-10808}:10808/tcp"
-      - "${WEBXRAY_PROXY_PORT:-10808}:10808/udp"
+      WEBXRAY_CORS_ORIGINS: ${WEBXRAY_CORS_ORIGINS:-*}
     volumes:
       - webxray-data:/data
 

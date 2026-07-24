@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { spawn } from 'node:child_process';
-import { access, mkdir, rename, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createConnection } from 'node:net';
 import { generateXrayConfig } from './config.mjs';
@@ -44,6 +44,36 @@ function operationError(status, message) {
   const error = new Error(message);
   error.status = status;
   return error;
+}
+
+function hasTunInbound(config) {
+  return Array.isArray(config?.inbounds) && config.inbounds.some((inbound) => inbound.protocol === 'tun');
+}
+
+function hasTunAutoRoutes(config) {
+  return Array.isArray(config?.inbounds) && config.inbounds.some((inbound) => (
+    inbound.protocol === 'tun'
+    && Array.isArray(inbound.settings?.autoSystemRoutingTable)
+    && inbound.settings.autoSystemRoutingTable.length > 0
+  ));
+}
+
+function versionLineParts(versionLine) {
+  const match = String(versionLine || '').match(/\bXray\s+(\d+)\.(\d+)\.(\d+)\b/i);
+  return match ? match.slice(1).map(Number) : null;
+}
+
+export function xrayVersionBefore(versionLine, minimum) {
+  const current = versionLineParts(versionLine);
+  if (!current) return false;
+  for (let index = 0; index < minimum.length; index += 1) {
+    if (current[index] !== minimum[index]) return current[index] < minimum[index];
+  }
+  return false;
+}
+
+export function xrayValidationFailed(code, output) {
+  return code !== 0 || /(?:^|\n)Failed to start:/i.test(String(output || ''));
 }
 
 export class CoreController extends EventEmitter {
@@ -136,7 +166,7 @@ export class CoreController extends EventEmitter {
       timeout: 15000
     });
     const output = `${result.stdout}\n${result.stderr}`.trim();
-    if (result.code !== 0) {
+    if (xrayValidationFailed(result.code, output)) {
       this.addLog('error', output || 'Xray 配置校验失败');
       throw operationError(422, output || 'Xray 配置校验失败');
     }
@@ -144,10 +174,63 @@ export class CoreController extends EventEmitter {
     return { valid: true, output };
   }
 
+  async tunStatus() {
+    const linux = process.platform === 'linux';
+    let device = false;
+    let netAdmin = false;
+    if (linux) {
+      try {
+        await access('/dev/net/tun');
+        device = true;
+      } catch {
+        device = false;
+      }
+      try {
+        const status = await readFile('/proc/self/status', 'utf8');
+        const capEff = status.match(/^CapEff:\s*([0-9a-fA-F]+)/m)?.[1] || '0';
+        netAdmin = (BigInt(`0x${capEff}`) & (1n << 12n)) !== 0n;
+      } catch {
+        netAdmin = false;
+      }
+    }
+    const versionKnown = Boolean(versionLineParts(this.version));
+    const autoRouteSupported = versionKnown
+      ? !xrayVersionBefore(this.version, [26, 7, 11])
+      : null;
+    return {
+      platform: process.platform,
+      linux,
+      device,
+      netAdmin,
+      coreAvailable: Boolean(this.version),
+      autoRouteSupported,
+      ready: linux && device && netAdmin && Boolean(this.version),
+      minimumAutoRouteVersion: '26.7.11'
+    };
+  }
+
+  async assertTunReady(config) {
+    if (!hasTunInbound(config)) return;
+    const status = await this.tunStatus();
+    if (!status.linux) {
+      throw operationError(422, 'Xray TUN 透明代理只支持 Linux 宿主网络模式');
+    }
+    if (hasTunAutoRoutes(config) && status.autoRouteSupported === false) {
+      throw operationError(422, 'Linux 自动 TUN 地址和路由需要 Xray 26.7.11 或更高版本');
+    }
+    if (!status.device) {
+      throw operationError(422, '未检测到 /dev/net/tun，请确认 Docker 挂载了 TUN 设备');
+    }
+    if (!status.netAdmin) {
+      throw operationError(422, '当前进程没有 CAP_NET_ADMIN，无法创建 TUN 接口或写入系统路由');
+    }
+  }
+
   async start() {
     if (this.child && this.child.exitCode === null) return this.status();
     const config = this.config();
     await this.validate(config);
+    await this.assertTunReady(config);
     await rename(this.candidatePath, this.configPath);
     this.desiredRunning = true;
     this.lastError = null;
@@ -201,6 +284,7 @@ export class CoreController extends EventEmitter {
   async restart() {
     const config = this.config();
     await this.validate(config);
+    await this.assertTunReady(config);
     await this.stop();
     await rename(this.candidatePath, this.configPath);
     return this.startFromValidatedConfig(config);

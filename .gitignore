@@ -2,4 +2,17 @@ node_modules/
 dist/
 data/
 .env
+.env.local
+.env.*.local
+# Static-host deployment state and local secrets
+.dev.vars
+.dev.vars.*
+.cloudflare/
+.wrangler/
+wrangler.toml
+wrangler.json
+wrangler.jsonc
+frontend/_headers
+frontend/_redirects
+coverage/
 npm-debug.log*

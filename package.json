@@ -4,21 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"vite --host 0.0.0.0\" \"node --watch server/index.mjs\"",
-    "dev:ui": "vite --host 0.0.0.0",
-    "start": "node server/index.mjs",
-    "build": "vite build",
-    "test": "node --test"
-  },
-  "dependencies": {
-    "lucide-react": "latest",
-    "react": "latest",
-    "react-dom": "latest"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "latest",
-    "concurrently": "latest",
-    "playwright": "^1.61.1",
-    "vite": "latest"
+    "start": "node backend/server/index.mjs",
+    "dev:api": "node --watch backend/server/index.mjs",
+    "dev:frontend": "node tools/serve-static.mjs frontend 5173",
+    "build:ui": "node --check frontend/app.js",
+    "test": "node --test backend/test/*.mjs"
   }
 }

@@ -1,19 +1,26 @@
 import { createServer } from 'node:http';
-import { createReadStream } from 'node:fs';
-import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CoreController, tcpDelay } from './core.mjs';
 import { normalizeProfile, parseShareLink, parseSubscriptionText, toShareLink } from './profiles.mjs';
 import { Store } from './store.mjs';
-import { HttpError, id, now } from './utils.mjs';
+import { HttpError, now } from './utils.mjs';
+import {
+  normalizeBackupState,
+  normalizeRouting,
+  normalizeSettings,
+  normalizeSubscription
+} from './validation.mjs';
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dataDir = path.resolve(process.env.WEBXRAY_DATA_DIR || path.join(rootDir, 'data'));
-const publicDir = path.resolve(process.env.WEBXRAY_PUBLIC_DIR || path.join(rootDir, 'dist'));
 const port = Number(process.env.WEBXRAY_PORT || 3000);
 const host = process.env.WEBXRAY_HOST || '0.0.0.0';
 const authToken = process.env.WEBXRAY_AUTH_TOKEN || '';
+const corsOrigins = String(process.env.WEBXRAY_CORS_ORIGINS || '*')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean);
 const store = new Store(dataDir);
 await store.init();
 const core = new CoreController({
@@ -22,17 +29,6 @@ const core = new CoreController({
   binary: process.env.XRAY_BIN || '/usr/local/bin/xray'
 });
 await core.init();
-
-const contentTypes = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2'
-};
 
 function json(res, status, body, extraHeaders = {}) {
   res.writeHead(status, {
@@ -45,6 +41,30 @@ function json(res, status, body, extraHeaders = {}) {
 
 function success(res, data = {}, extraHeaders = {}) {
   json(res, 200, { ok: true, ...data }, extraHeaders);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+}
+
+function originMatches(pattern, origin) {
+  if (pattern === '*') return true;
+  if (!pattern.includes('*')) return pattern === origin;
+  return new RegExp(`^${pattern.split('*').map(escapeRegExp).join('.*')}$`).test(origin);
+}
+
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  const allowed = corsOrigins.some((pattern) => originMatches(pattern, origin));
+  if (!allowed) return false;
+  res.setHeader('vary', 'Origin');
+  res.setHeader('access-control-allow-origin', corsOrigins.includes('*') ? '*' : origin);
+  res.setHeader('access-control-allow-methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('access-control-allow-headers', req.headers['access-control-request-headers'] || 'content-type, authorization');
+  res.setHeader('access-control-expose-headers', 'content-disposition');
+  res.setHeader('access-control-max-age', '86400');
+  return true;
 }
 
 function parseCookies(req) {
@@ -97,32 +117,6 @@ function profileIdentity(profile) {
 function replaceState(draft, snapshot) {
   for (const key of Object.keys(draft)) delete draft[key];
   Object.assign(draft, structuredClone(snapshot));
-}
-
-function mergedSettings(current, patch) {
-  const next = {
-    ...current,
-    ...patch,
-    inboundAuth: { ...current.inboundAuth, ...(patch.inboundAuth || {}) }
-  };
-  for (const key of ['mixedPort', 'metricsPort']) {
-    next[key] = Number(next[key]);
-    if (!Number.isInteger(next[key]) || next[key] < 1 || next[key] > 65535) {
-      throw new HttpError(400, `${key} 必须在 1 到 65535 之间`);
-    }
-  }
-  if (next.mixedPort === next.metricsPort) throw new HttpError(400, 'mixedPort 和 metricsPort 不能相同');
-  next.tunMtu = Number(next.tunMtu);
-  if (!Number.isInteger(next.tunMtu) || next.tunMtu < 1280 || next.tunMtu > 9000) {
-    throw new HttpError(400, 'TUN MTU 必须在 1280 到 9000 之间');
-  }
-  if (next.inboundAuth.enabled && (!next.inboundAuth.username || !next.inboundAuth.password)) {
-    throw new HttpError(400, '启用本地代理认证时必须填写用户名和密码');
-  }
-  next.dnsServers = Array.isArray(next.dnsServers)
-    ? next.dnsServers.map((item) => String(item).trim()).filter(Boolean)
-    : String(next.dnsServers || '').split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
-  return next;
 }
 
 async function transactionalUpdate(mutator, apply = false) {
@@ -232,10 +226,13 @@ async function handleApi(req, res, url) {
   if (!authenticated(req)) throw new HttpError(401, '需要登录');
 
   if (pathname === '/api/state' && method === 'GET') {
-    return success(res, { state: store.get(), core: core.status() });
+    return success(res, { state: store.get(), core: core.status(), tun: await core.tunStatus() });
   }
   if (pathname === '/api/core/status' && method === 'GET') {
-    return success(res, { core: core.status() });
+    return success(res, { core: core.status(), tun: await core.tunStatus() });
+  }
+  if (pathname === '/api/tun/status' && method === 'GET') {
+    return success(res, { tun: await core.tunStatus() });
   }
   if (pathname === '/api/core/config' && method === 'GET') {
     return success(res, { config: core.config() });
@@ -259,14 +256,14 @@ async function handleApi(req, res, url) {
   if (pathname === '/api/settings' && method === 'PUT') {
     const body = await readJson(req);
     await transactionalUpdate((draft) => {
-      draft.settings = mergedSettings(draft.settings, body);
+      draft.settings = normalizeSettings(draft.settings, body);
     }, true);
     return success(res, { state: store.get(), core: core.status() });
   }
   if (pathname === '/api/routing' && method === 'PUT') {
     const body = await readJson(req);
     await transactionalUpdate((draft) => {
-      draft.routing = { ...draft.routing, ...body, rules: Array.isArray(body.rules) ? body.rules : draft.routing.rules };
+      draft.routing = normalizeRouting(draft.routing, body);
     }, true);
     return success(res, { state: store.get(), core: core.status() });
   }
@@ -371,18 +368,7 @@ async function handleApi(req, res, url) {
 
   if (pathname === '/api/subscriptions' && method === 'POST') {
     const body = await readJson(req);
-    const subscription = {
-      id: id('sub'),
-      name: String(body.name || '新订阅').trim(),
-      url: String(body.url || '').trim(),
-      userAgent: String(body.userAgent || '').trim(),
-      enabled: body.enabled !== false,
-      nodeCount: 0,
-      lastError: '',
-      createdAt: now(),
-      updatedAt: null
-    };
-    if (!subscription.url) throw new HttpError(400, '订阅地址不能为空');
+    const subscription = normalizeSubscription(body);
     await store.update((draft) => draft.subscriptions.push(subscription));
     return json(res, 201, { ok: true, subscription });
   }
@@ -421,15 +407,11 @@ async function handleApi(req, res, url) {
     }
     if (!isUpdate && method === 'PUT') {
       const body = await readJson(req);
+      const subscription = normalizeSubscription(body, current);
       await store.update((draft) => {
         const target = draft.subscriptions.find((item) => item.id === subscriptionId);
         const previousName = target.name;
-        Object.assign(target, {
-          name: String(body.name ?? target.name).trim(),
-          url: String(body.url ?? target.url).trim(),
-          userAgent: String(body.userAgent ?? target.userAgent).trim(),
-          enabled: body.enabled ?? target.enabled
-        });
+        Object.assign(target, subscription);
         if (target.name !== previousName) {
           for (const profile of draft.profiles) {
             if (profile.subscriptionId === subscriptionId) profile.group = target.name;
@@ -462,8 +444,7 @@ async function handleApi(req, res, url) {
   }
   if (pathname === '/api/backup' && method === 'POST') {
     const body = await readJson(req);
-    const imported = body.state || body;
-    if (!imported || !Array.isArray(imported.profiles)) throw new HttpError(400, '备份文件格式无效');
+    const imported = normalizeBackupState(body.state || body);
     await core.stop();
     await store.update((draft) => replaceState(draft, imported));
     return success(res, { state: store.get(), core: core.status() });
@@ -472,36 +453,18 @@ async function handleApi(req, res, url) {
   throw new HttpError(404, '接口不存在');
 }
 
-async function serveStatic(req, res, url) {
-  const requested = decodeURIComponent(url.pathname);
-  const relative = requested === '/' ? 'index.html' : requested.replace(/^\/+/, '');
-  let target = path.resolve(publicDir, relative);
-  if (!target.startsWith(`${publicDir}${path.sep}`) && target !== publicDir) {
-    res.writeHead(403);
-    return res.end('Forbidden');
-  }
-  try {
-    await access(target);
-  } catch {
-    target = path.join(publicDir, 'index.html');
-  }
-  const extension = path.extname(target);
-  res.writeHead(200, {
-    'content-type': contentTypes[extension] || 'application/octet-stream',
-    'cache-control': extension === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable',
-    'x-content-type-options': 'nosniff',
-    'x-frame-options': 'DENY',
-    'referrer-policy': 'same-origin',
-    'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; font-src 'self'"
-  });
-  createReadStream(target).pipe(res);
-}
-
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+  const corsAllowed = applyCors(req, res);
+  if (req.method === 'OPTIONS') {
+    res.writeHead(corsAllowed ? 204 : 403);
+    res.end();
+    return;
+  }
   try {
+    if (!corsAllowed) throw new HttpError(403, 'CORS origin is not allowed');
     if (url.pathname.startsWith('/api/')) await handleApi(req, res, url);
-    else await serveStatic(req, res, url);
+    else throw new HttpError(404, 'WebXray 后端仅提供 /api 接口');
   } catch (error) {
     const status = error.status || 500;
     if (status >= 500) core.addLog('error', `${req.method} ${url.pathname}: ${error.stack || error.message}`);

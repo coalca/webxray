@@ -17,8 +17,12 @@ export function createDefaultState() {
       autoStart: true,
       muxEnabled: false,
       tunEnabled: false,
+      tunAutoRoute: true,
+      tunName: 'xray_tun',
       tunMtu: 9000,
       tunIpv6: false,
+      tunGateway: ['169.254.10.1/30'],
+      tunRoutes: ['0.0.0.0/1', '128.0.0.0/1'],
       inboundAuth: {
         enabled: false,
         username: '',

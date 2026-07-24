@@ -207,19 +207,23 @@ export function generateXrayConfig(state) {
     }
   }];
   if (settings.tunEnabled) {
+    const gateway = normalizeArray(settings.tunGateway || ['169.254.10.1/30']);
+    const routes = normalizeArray(settings.tunRoutes || ['0.0.0.0/1', '128.0.0.0/1']);
+    if (settings.tunIpv6 && !gateway.some((entry) => entry.includes(':'))) gateway.push('fdfe:dcba:9876::1/126');
+    if (settings.tunIpv6 && settings.tunAutoRoute && !routes.some((entry) => entry.includes(':'))) {
+      routes.push('::/1', '8000::/1');
+    }
+    const tunSettings = {
+      name: settings.tunName || 'xray_tun',
+      mtu: Number(settings.tunMtu) || 9000,
+      gateway,
+      autoOutboundsInterface: 'auto'
+    };
+    if (settings.tunAutoRoute) tunSettings.autoSystemRoutingTable = routes;
     inbounds.push({
       tag: 'tun-in',
       protocol: 'tun',
-      settings: {
-        name: 'xray_tun',
-        MTU: Number(settings.tunMtu) || 9000,
-        gateway: settings.tunIpv6
-          ? ['172.18.0.1/30', 'fdfe:dcba:9876::1/126']
-          : ['172.18.0.1/30'],
-        dns: ['172.18.0.1'],
-        autoSystemRoutingTable: settings.tunIpv6 ? ['0.0.0.0/0', '::/0'] : ['0.0.0.0/0'],
-        autoOutboundsInterface: 'auto'
-      },
+      settings: tunSettings,
       sniffing: {
         enabled: true,
         destOverride: ['http', 'tls'],
