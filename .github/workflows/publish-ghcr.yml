@@ -24,8 +24,12 @@ jobs:
       - name: Read commit version
         id: version
         run: |
-          echo "value=$(git show -s --format=%cs \"$GITHUB_SHA\")" >> "$GITHUB_OUTPUT"
-          echo "created=$(git show -s --format=%cI \"$GITHUB_SHA\")" >> "$GITHUB_OUTPUT"
+          version="$(git show -s --format=%cs "$GITHUB_SHA")"
+          created="$(git show -s --format=%cI "$GITHUB_SHA")"
+          test -n "$version"
+          test -n "$created"
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+          echo "created=$created" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
