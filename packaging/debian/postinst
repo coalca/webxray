@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+if ! getent group webxray >/dev/null; then
+  addgroup --system webxray
+fi
+if ! id webxray >/dev/null 2>&1; then
+  adduser --system --ingroup webxray --home /var/lib/webxray --no-create-home --disabled-login webxray
+fi
+install -d -m 0700 -o webxray -g webxray /var/lib/webxray
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload || true
+  systemctl enable webxray.service >/dev/null || true
+  systemctl restart webxray.service || true
+fi

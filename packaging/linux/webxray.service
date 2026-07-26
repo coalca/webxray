@@ -1,0 +1,30 @@
+[Unit]
+Description=WebXray control panel and Xray core
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=webxray
+Group=webxray
+WorkingDirectory=/usr/lib/webxray
+ExecStart=/usr/bin/node /usr/lib/webxray/server/launcher.mjs
+Environment=NODE_ENV=production
+Environment=WEBXRAY_HOST=0.0.0.0
+Environment=WEBXRAY_DATA_DIR=/var/lib/webxray
+Environment=WEBXRAY_FRONTEND_DIR=/usr/share/webxray/frontend
+Environment=WEBXRAY_BUNDLED_XRAY_DIR=/usr/lib/webxray/defaults/xray
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+UMask=0077
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/webxray
+
+[Install]
+WantedBy=multi-user.target

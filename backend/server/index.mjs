@@ -28,7 +28,9 @@ await store.init();
 const core = new CoreController({
   store,
   dataDir,
-  binary: process.env.XRAY_BIN || '/usr/local/bin/xray'
+  binary: process.env.XRAY_BIN,
+  runtimeDir: process.env.XRAY_RUNTIME_DIR,
+  assetDir: process.env.XRAY_LOCATION_ASSET
 });
 await core.init();
 

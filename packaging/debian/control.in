@@ -1,0 +1,11 @@
+Package: webxray
+Version: @VERSION@
+Section: net
+Priority: optional
+Architecture: @ARCH@
+Depends: nodejs (>= 18), ca-certificates
+Maintainer: WebXray <anonymous@users.noreply.github.com>
+Homepage: https://github.com/coalca/webxray
+Description: Browser control panel for the Xray client core
+ WebXray manages Xray profiles, subscriptions, routing, logs and the core
+ lifecycle through a responsive browser interface.

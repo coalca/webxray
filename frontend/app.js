@@ -21,11 +21,11 @@
     || (location.origin === 'null' ? 'http://127.0.0.1:3000' : location.origin);
 
   const state = {
-    auth: 'loading',
+    connection: 'connecting',
     apiBase: normalizeApi(new URLSearchParams(location.search).get('api') || localStorage.getItem(STORAGE.api) || defaultApiBase),
     token: localStorage.getItem(STORAGE.token) || '',
-    authRequired: false,
-    loginError: '',
+    connectionError: '',
+    manualDisconnect: false,
     app: null,
     group: '全部服务器',
     search: '',
@@ -68,6 +68,19 @@
     return value ? ' checked' : '';
   }
 
+  function icon(name) {
+    const icons = {
+      plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8Z"/>',
+      sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+      moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+      menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+      play: '<path d="m6 3 14 9-14 9Z"/>',
+      stop: '<rect width="14" height="14" x="5" y="5" rx="1"/>',
+      restart: '<path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/>'
+    };
+    return `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || ''}</svg>`;
+  }
+
   function apiUrl(path) {
     if (/^https?:\/\//i.test(path)) return path;
     return `${state.apiBase}${path.startsWith('/') ? path : `/${path}`}`;
@@ -102,7 +115,10 @@
       if (error.name === 'TypeError') throw new Error(`无法连接后端：${state.apiBase}`);
       throw error;
     }
-    const body = await response.json().catch(() => ({ ok: false, error: `HTTP ${response.status}` }));
+    const body = await response.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      throw new Error(`该地址不是 WebXray 后端：${state.apiBase}`);
+    }
     if (!response.ok || !body.ok) {
       const error = new Error(body.error || `HTTP ${response.status}`);
       error.status = response.status;
@@ -173,32 +189,43 @@
     });
   }
 
-  async function refresh() {
+  async function refresh(renderView = true) {
     const result = await request('/api/state');
     state.app = { state: result.state, core: result.core, tun: result.tun };
-    state.auth = 'ready';
+    state.connection = 'connected';
+    state.connectionError = '';
     const validGroups = groups();
     if (!validGroups.includes(state.group)) state.group = '全部服务器';
-    render();
+    if (renderView) render();
     return result;
+  }
+
+  async function connect({ silent = false } = {}) {
+    state.connection = 'connecting';
+    state.manualDisconnect = false;
+    if (!silent) render();
+    try {
+      const result = await request('/api/auth/status');
+      if (!result.authenticated) {
+        if (!state.token) throw new Error('需要访问令牌');
+        await request('/api/auth/login', { method: 'POST', body: JSON.stringify({ token: state.token }) });
+      }
+      await refresh(false);
+      render();
+      return true;
+    } catch (error) {
+      state.connection = 'disconnected';
+      state.connectionError = error.message;
+      state.app = null;
+      render();
+      return false;
+    }
   }
 
   async function boot() {
     document.documentElement.dataset.theme = state.theme;
-    try {
-      const result = await request('/api/auth/status');
-      state.authRequired = result.required;
-      if (result.authenticated) await refresh();
-      else {
-        if (result.required) saveConnection(state.apiBase, '');
-        state.auth = 'login';
-        render();
-      }
-    } catch (error) {
-      state.loginError = error.message;
-      state.auth = 'login';
-      render();
-    }
+    render();
+    await connect({ silent: true });
   }
 
   async function perform(key, action, successMessage) {
@@ -233,83 +260,76 @@
   function render() {
     document.documentElement.dataset.theme = state.theme;
     localStorage.setItem(STORAGE.theme, state.theme);
-    if (state.auth === 'loading') {
-      root.innerHTML = `<div class="boot-screen"><div class="brand-icon">◎</div><span>正在连接 WebXray</span></div>`;
-      return;
-    }
-    if (state.auth === 'login') {
-      root.innerHTML = loginView(state.loginError);
-      bindLogin();
-      return;
-    }
-    if (!state.app) return;
     root.innerHTML = appView();
     bindApp();
   }
 
-  function loginView(error = '') {
-    return `
-      <main class="login-page">
-        <form class="login-panel" id="login-form">
-          <div class="brand-mark"><span>◎</span><span>WebXray</span></div>
-          <h1>控制面登录</h1>
-          <p>输入部署时配置的访问令牌；远程控制其他实例时可修改 API 地址。</p>
-          <label class="field field-wide"><span>后端 API 地址</span><input name="apiBase" value="${attr(state.apiBase)}" placeholder="http://127.0.0.1:3000" required /></label>
-          <label class="field field-wide"><span>访问令牌</span><input name="token" type="password" value="${attr(state.token)}" autocomplete="current-password" /></label>
-          ${error ? `<div class="form-error" role="alert">${escapeHtml(error)}</div>` : ''}
-          <button class="command-button primary full" type="submit">登录</button>
-        </form>
-      </main>
-    `;
+  function disconnectedApp() {
+    return {
+      state: {
+        profiles: [], subscriptions: [], activeProfileId: null,
+        settings: { allowLan: false, mixedPort: 10808 }
+      },
+      core: {
+        available: false, running: false, pid: null, uptimeSeconds: 0,
+        traffic: { upRate: 0, downRate: 0, upTotal: 0, downTotal: 0 }
+      },
+      tun: null
+    };
   }
 
   function appView() {
-    const appState = state.app.state;
-    const core = state.app.core;
+    const connected = state.connection === 'connected' && Boolean(state.app);
+    const current = state.app || disconnectedApp();
+    const appState = current.state;
+    const core = current.core;
     const profiles = filteredProfiles();
     const groupNames = groups();
     const selectedProfiles = appState.profiles.filter((profile) => state.selected.has(profile.id));
     const coreClass = core.running ? 'running' : core.available ? 'stopped' : 'unavailable';
+    const connectionLabel = connected ? '已连接' : state.connection === 'connecting' ? '连接中' : '未连接';
+    const disabled = connected ? '' : ' disabled';
     return `
-      <div class="app-shell ${state.busy ? 'is-busy' : ''}" aria-busy="${state.busy ? 'true' : 'false'}">
+      <div class="app-shell connection-${attr(state.connection)} ${state.busy ? 'is-busy' : ''}" aria-busy="${state.busy ? 'true' : 'false'}">
         ${state.busy ? '<div class="operation-progress" role="status" aria-label="操作进行中"></div>' : ''}
         <header class="topbar">
           <div class="brand"><span class="brand-icon">◎</span><strong>WebXray</strong><span>XRAY CONTROL</span></div>
           <nav class="menu-strip ${state.mobileMenu ? 'open' : ''}">
-            <button data-open="node">服务器</button>
-            <button data-open="subscriptions">订阅</button>
-            <button data-open="routing">路由</button>
-            <button data-open="settings">设置</button>
-            <button data-open="backup">备份</button>
+            <button data-open="node"${disabled}>服务器</button>
+            <button data-open="subscriptions"${disabled}>订阅</button>
+            <button data-open="routing"${disabled}>路由</button>
+            <button data-open="settings"${disabled}>设置</button>
+            <button data-open="backup"${disabled}>备份</button>
           </nav>
           <div class="top-actions">
-            <button class="icon-button" data-open="connection" title="API 连接">API</button>
-            <button class="icon-button" data-action="theme" title="切换主题">${state.theme === 'light' ? '◐' : '○'}</button>
-            ${state.authRequired ? '<button class="icon-button" data-action="logout" title="退出登录">⇥</button>' : ''}
-            <button class="icon-button mobile-only" data-action="mobile-menu" title="菜单">☰</button>
+            <button class="connection-button ${connected ? 'connected' : 'disconnected'}" data-open="connection" title="连接设置" aria-live="polite">
+              <span class="connection-dot"></span>${icon('plug')}<span>${connectionLabel}</span>
+            </button>
+            <button class="icon-button" data-action="theme" title="切换主题">${icon(state.theme === 'light' ? 'moon' : 'sun')}</button>
+            <button class="icon-button mobile-only" data-action="mobile-menu" title="菜单">${icon('menu')}</button>
           </div>
         </header>
         <div class="toolbar">
           <div class="toolbar-group">
-            <button class="command-button primary" data-open="node">+ 添加服务器</button>
-            <button class="icon-button" data-open="import" title="从分享链接导入">粘贴</button>
-            <button class="icon-button" data-open="subscriptions" title="订阅设置">订阅</button>
-            <button class="icon-button" data-action="subscriptions-update" title="更新全部订阅">刷新</button>
+            <button class="command-button primary add-server-button" data-open="node"${disabled}><span aria-hidden="true">+</span><span class="button-label">添加服务器</span></button>
+            <button class="icon-button" data-open="import" title="从分享链接导入"${disabled}>粘贴</button>
+            <button class="icon-button" data-open="subscriptions" title="订阅设置"${disabled}>订阅</button>
+            <button class="icon-button" data-action="subscriptions-update" title="更新全部订阅"${disabled}>刷新</button>
           </div>
           <span class="toolbar-separator"></span>
           <div class="toolbar-group">
-            <button class="icon-button" data-action="test" title="测试 TCP 延迟">测速</button>
-            <button class="icon-button" data-open="routing" title="路由设置">路由</button>
-            <button class="icon-button" data-open="settings" title="参数设置">设置</button>
-            <button class="icon-button" data-action="config" title="查看实际配置">JSON</button>
+            <button class="icon-button" data-action="test" title="测试 TCP 延迟"${disabled}>测速</button>
+            <button class="icon-button" data-open="routing" title="路由设置"${disabled}>路由</button>
+            <button class="icon-button" data-open="settings" title="参数设置"${disabled}>设置</button>
+            <button class="icon-button" data-action="config" title="查看实际配置"${disabled}>JSON</button>
           </div>
           <div class="toolbar-spacer"></div>
           <div class="core-controls">
             <span class="core-state ${coreClass}"><i></i>${core.running ? '运行中' : core.available ? '已停止' : '核心不可用'}</span>
             ${core.running
-              ? '<button class="icon-button" data-action="core-stop" title="停止 Xray">■</button>'
-              : `<button class="icon-button success" data-action="core-start" title="启动 Xray"${appState.activeProfileId ? '' : ' disabled'}>▶</button>`}
-            <button class="icon-button" data-action="core-restart" title="重启 Xray"${appState.activeProfileId ? '' : ' disabled'}>↻</button>
+              ? `<button class="icon-button" data-action="core-stop" title="停止 Xray">${icon('stop')}</button>`
+              : `<button class="icon-button success" data-action="core-start" title="启动 Xray"${appState.activeProfileId && connected ? '' : ' disabled'}>${icon('play')}</button>`}
+            <button class="icon-button" data-action="core-restart" title="重启 Xray"${appState.activeProfileId && connected ? '' : ' disabled'}>${icon('restart')}</button>
           </div>
         </div>
         <div class="workspace">
@@ -323,11 +343,11 @@
                 ${selectedProfiles.length === 1 ? `<button class="command-button" data-action="activate-selected">设为活动</button><button class="icon-button" data-action="copy-selected">复制</button><button class="icon-button" data-action="edit-selected">编辑</button>` : ''}
               </div>
             </div>
-            ${tableView(appState, profiles)}
+            ${tableView(appState, profiles, connected)}
             ${bottomPanelView()}
           </main>
         </div>
-        ${statusbarView(appState, core)}
+        ${statusbarView(appState, core, current.tun)}
         ${modalView()}
         ${toastView()}
       </div>
@@ -360,7 +380,7 @@
     `;
   }
 
-  function tableView(appState, profiles) {
+  function tableView(appState, profiles, connected) {
     const allSelected = profiles.length > 0 && profiles.every((profile) => state.selected.has(profile.id));
     return `
       <div class="table-wrap">
@@ -371,7 +391,9 @@
           </tr></thead>
           <tbody>
             ${profiles.map((profile) => profileRow(appState, profile)).join('')}
-            ${profiles.length ? '' : `<tr><td colspan="10"><div class="empty-state"><div class="brand-icon">▣</div><h3>没有服务器</h3><p>添加节点、粘贴分享链接或更新订阅。</p><button class="command-button primary" data-open="node">+ 添加服务器</button></div></td></tr>`}
+            ${profiles.length ? '' : connected
+              ? `<tr><td colspan="10"><div class="empty-state"><div class="brand-icon">▣</div><h3>没有服务器</h3><p>添加节点、粘贴分享链接或更新订阅。</p><button class="command-button primary" data-open="node">+ 添加服务器</button></div></td></tr>`
+              : `<tr><td colspan="10"><div class="empty-state disconnected-empty">${icon('plug')}<h3>后端未连接</h3><p>${escapeHtml(state.connectionError || `正在连接 ${state.apiBase}`)}</p><button class="command-button primary" data-open="connection">连接设置</button></div></td></tr>`}
           </tbody>
         </table>
       </div>
@@ -423,8 +445,7 @@
     return `<div class="log-line log-${attr(log.level)}"><time>${new Date(log.at).toLocaleTimeString()}</time><span>${escapeHtml(log.level)}</span><pre>${escapeHtml(log.message)}</pre></div>`;
   }
 
-  function statusbarView(appState, core) {
-    const tun = state.app.tun;
+  function statusbarView(appState, core, tun) {
     return `
       <footer class="statusbar">
         <span><span class="status-led ${core.running ? 'online' : ''}"></span>${core.running ? `Xray · PID ${core.pid}` : 'Xray 已停止'}</span>
@@ -492,13 +513,27 @@
   }
 
   function connectionModal() {
+    const connected = state.connection === 'connected' && Boolean(state.app);
+    const paths = state.app?.core?.paths;
     const body = `
       <form id="connection-form" class="form-grid">
-        ${wideField('apiBase', '后端 API 地址', state.apiBase, 'placeholder="http://127.0.0.1:3000" required')}
+        <div class="connection-summary field-wide ${connected ? 'connected' : 'disconnected'}">
+          <span class="connection-dot"></span>
+          <div><strong>${connected ? '后端已连接' : '后端未连接'}</strong><small>${escapeHtml(connected ? state.apiBase : state.connectionError || state.apiBase)}</small></div>
+        </div>
+        ${wideField('apiBase', '后端 API 地址', state.apiBase, 'placeholder="http://127.0.0.1:3000" autocomplete="url" required')}
         ${wideField('token', '访问令牌', state.token, 'type="password" autocomplete="current-password"')}
+        ${connected && paths ? `
+          <div class="runtime-paths field-wide">
+            <span>Xray 核心</span><code>${escapeHtml(paths.binary)}</code>
+            <span>Geo 目录</span><code>${escapeHtml(paths.assets)}</code>
+            <span>实际配置</span><code>${escapeHtml(paths.config)}</code>
+          </div>
+        ` : ''}
       </form>
     `;
-    return modalShell('API 连接', '修改后会立即重新连接后端', body, '<button class="button" data-action="modal-close">取消</button><button class="command-button primary" form="connection-form">保存并连接</button>');
+    const footer = `${connected ? '<button class="button danger-text footer-left" data-action="connection-disconnect">断开连接</button>' : ''}<button class="button" data-action="modal-close">取消</button><button class="command-button primary" form="connection-form">保存并连接</button>`;
+    return modalShell('连接设置', '', body, footer);
   }
 
   function nodeModal(profile) {
@@ -685,26 +720,6 @@
     return `<div class="toast-stack" role="status" aria-live="polite">${state.toasts.map((toast) => `<div class="toast ${attr(toast.type)}"><span>${escapeHtml(toast.message)}</span></div>`).join('')}</div>`;
   }
 
-  function bindLogin() {
-    const form = document.getElementById('login-form');
-    form?.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const submit = form.querySelector('[type="submit"]');
-      submit.disabled = true;
-      submit.textContent = '连接中...';
-      const data = new FormData(form);
-      saveConnection(data.get('apiBase'), data.get('token'));
-      try {
-        await request('/api/auth/login', { method: 'POST', body: JSON.stringify({ token: state.token }) });
-        state.loginError = '';
-        await refresh();
-      } catch (error) {
-        state.loginError = error.message;
-        render();
-      }
-    });
-  }
-
   function bindApp() {
     document.getElementById('search')?.addEventListener('input', (event) => {
       const caret = event.target.selectionStart;
@@ -730,6 +745,14 @@
     const target = event.target.closest('button, [data-group], [data-select]');
     if (!target) return;
     if (state.busy && target.matches('button')) return;
+    const alwaysAvailable = target.dataset.open === 'connection'
+      || target.getAttribute('form') === 'connection-form'
+      || ['theme', 'mobile-menu', 'modal-close', 'connection-disconnect'].includes(target.dataset.action);
+    if (state.connection !== 'connected' && !alwaysAvailable && target.matches('button')) {
+      state.modal = { type: 'connection' };
+      render();
+      return;
+    }
     if (target.dataset.open) {
       state.modal = { type: target.dataset.open };
       state.mobileMenu = false;
@@ -784,7 +807,7 @@
 
   document.addEventListener('submit', async (event) => {
     const form = event.target;
-    if (!form.id || form.id === 'login-form') return;
+    if (!form.id) return;
     event.preventDefault();
     if (form.id === 'connection-form') return saveConnectionForm(form);
     if (form.id === 'node-form') return saveNode(form);
@@ -805,12 +828,15 @@
     } else if (action === 'mobile-menu') {
       state.mobileMenu = !state.mobileMenu;
       render();
-    } else if (action === 'logout') {
-      try { await request('/api/auth/logout', { method: 'POST' }); } catch {}
-      saveConnection(state.apiBase, '');
-      state.loginError = '';
-      state.auth = 'login';
+    } else if (action === 'connection-disconnect') {
+      if (state.connection === 'connected') {
+        try { await request('/api/auth/logout', { method: 'POST' }); } catch {}
+      }
+      state.manualDisconnect = true;
+      state.connection = 'disconnected';
+      state.connectionError = '已手动断开';
       state.app = null;
+      state.modal = null;
       render();
     } else if (action === 'core-start') {
       await perform('start', () => request('/api/core/start', { method: 'POST' }), 'Xray 已启动');
@@ -937,15 +963,14 @@
   async function saveConnectionForm(form) {
     const data = new FormData(form);
     saveConnection(data.get('apiBase'), data.get('token'));
-    state.modal = null;
-    try {
-      await request('/api/auth/login', { method: 'POST', body: JSON.stringify({ token: state.token }) });
-      await refresh();
+    state.connectionError = '';
+    const connected = await connect();
+    if (connected) {
+      state.modal = null;
+      render();
       notify('API 连接已更新');
-    } catch (error) {
-      state.loginError = error.message;
-      state.auth = 'login';
-      state.app = null;
+    } else {
+      state.modal = { type: 'connection' };
       render();
     }
   }
@@ -1148,7 +1173,12 @@
 
   let polling = false;
   setInterval(async () => {
-    if (polling || document.hidden || state.auth !== 'ready') return;
+    if (polling || document.hidden || state.manualDisconnect || state.modal) return;
+    if (state.connection !== 'connected') {
+      polling = true;
+      try { await connect({ silent: true }); } finally { polling = false; }
+      return;
+    }
     polling = true;
     try {
       const [status, logResult] = await Promise.all([
@@ -1163,15 +1193,14 @@
       const active = document.activeElement;
       if (!state.modal && !active?.matches('input, textarea, select')) render();
     } catch (error) {
-      if (error.status === 401) {
-        state.auth = 'login';
-        state.app = null;
-        render();
-      }
+      state.connection = 'disconnected';
+      state.connectionError = error.status === 401 ? '连接已失效，请检查访问令牌' : error.message;
+      state.app = null;
+      render();
     } finally {
       polling = false;
     }
-  }, 1500);
+  }, 3000);
 
   boot();
 })();

@@ -77,11 +77,18 @@ export function xrayValidationFailed(code, output) {
 }
 
 export class CoreController extends EventEmitter {
-  constructor({ store, dataDir, binary = '/usr/local/bin/xray' }) {
+  constructor({
+    store,
+    dataDir,
+    binary = process.platform === 'win32' ? path.join(dataDir, 'xray', 'xray.exe') : path.join(dataDir, 'xray', 'xray'),
+    runtimeDir = path.join(dataDir, 'xray'),
+    assetDir = process.env.XRAY_LOCATION_ASSET || path.join(dataDir, 'xray')
+  }) {
     super();
     this.store = store;
     this.binary = binary;
-    this.runtimeDir = path.join(dataDir, 'runtime');
+    this.assetDir = assetDir;
+    this.runtimeDir = runtimeDir;
     this.configPath = path.join(this.runtimeDir, 'config.json');
     this.candidatePath = path.join(this.runtimeDir, 'config.candidate.json');
     this.child = null;
@@ -138,6 +145,11 @@ export class CoreController extends EventEmitter {
       lastExit: this.lastExit,
       lastError: this.lastError,
       desiredRunning: this.desiredRunning,
+      paths: {
+        binary: this.binary,
+        assets: this.assetDir,
+        config: this.configPath
+      },
       traffic: this.traffic
     };
   }
@@ -253,7 +265,7 @@ export class CoreController extends EventEmitter {
       cwd: this.runtimeDir,
       env: {
         ...process.env,
-        XRAY_LOCATION_ASSET: process.env.XRAY_LOCATION_ASSET || '/usr/local/share/xray'
+        XRAY_LOCATION_ASSET: this.assetDir
       },
       stdio: ['ignore', 'pipe', 'pipe']
     });
@@ -321,7 +333,7 @@ export class CoreController extends EventEmitter {
       cwd: this.runtimeDir,
       env: {
         ...process.env,
-        XRAY_LOCATION_ASSET: process.env.XRAY_LOCATION_ASSET || '/usr/local/share/xray'
+        XRAY_LOCATION_ASSET: this.assetDir
       },
       stdio: ['ignore', 'pipe', 'pipe']
     });

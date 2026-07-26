@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+export NODE_ENV="${NODE_ENV:-production}"
+export WEBXRAY_HOST="${WEBXRAY_HOST:-0.0.0.0}"
+export WEBXRAY_DATA_DIR="${WEBXRAY_DATA_DIR:-/var/lib/webxray}"
+export WEBXRAY_FRONTEND_DIR="${WEBXRAY_FRONTEND_DIR:-/usr/share/webxray/frontend}"
+export WEBXRAY_BUNDLED_XRAY_DIR="${WEBXRAY_BUNDLED_XRAY_DIR:-/usr/lib/webxray/defaults/xray}"
+
+if [ "${1:-}" = "-s" ]; then
+  action="${2:-}"
+  case "$action" in
+    install) exec systemctl enable --now webxray.service ;;
+    uninstall) exec systemctl disable --now webxray.service ;;
+    start|stop|restart|status) exec systemctl "$action" webxray.service ;;
+    *) printf 'Usage: sudo webxray -s install|uninstall|start|stop|restart|status\n' >&2; exit 2 ;;
+  esac
+fi
+
+if [ "${1:-}" = "token" ]; then
+  exec /usr/bin/node /usr/lib/webxray/server/launcher.mjs --print-token
+fi
+
+exec /usr/bin/node /usr/lib/webxray/server/launcher.mjs "$@"

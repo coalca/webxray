@@ -1,0 +1,23 @@
+<service>
+  <id>WebXray</id>
+  <name>WebXray</name>
+  <description>WebXray browser control panel and Xray client core</description>
+  <executable>%BASE%\runtime\node.exe</executable>
+  <arguments>"%BASE%\app\server\launcher.mjs"</arguments>
+  <workingdirectory>%BASE%</workingdirectory>
+  <startmode>Automatic</startmode>
+  <stoptimeout>15 sec</stoptimeout>
+  <env name="NODE_ENV" value="production" />
+  <env name="WEBXRAY_HOST" value="0.0.0.0" />
+  <env name="WEBXRAY_DATA_DIR" value="%BASE%\data" />
+  <env name="WEBXRAY_FRONTEND_DIR" value="%BASE%\app\frontend" />
+  <env name="WEBXRAY_BUNDLED_XRAY_DIR" value="%BASE%\defaults\xray" />
+  <logpath>%BASE%\data\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>4</keepFiles>
+  </log>
+  <onfailure action="restart" delay="5 sec" />
+  <onfailure action="restart" delay="15 sec" />
+  <resetfailure>1 hour</resetfailure>
+</service>

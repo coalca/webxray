@@ -77,9 +77,18 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
 .menu-strip button:hover { background: var(--surface-2); }
 .top-actions { margin-left: auto; display: flex; padding: 0 9px; gap: 3px; }
 .mobile-only { display: none !important; }
+.lucide-icon { width: 16px; height: 16px; display: block; flex: 0 0 auto; }
+.connection-button {
+  min-height: 32px; display: inline-flex; align-items: center; gap: 7px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 5px; color: var(--muted); background: var(--surface); cursor: pointer;
+}
+.connection-button:hover { border-color: var(--border-strong); background: var(--surface-2); }
+.connection-button.connected { color: var(--text); }
+.connection-dot { width: 8px; height: 8px; display: inline-block; flex: 0 0 auto; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 14%, transparent); }
+.connected > .connection-dot, .connection-button.connected .connection-dot { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 14%, transparent); }
 
 .toolbar { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-bottom: 1px solid var(--border); background: var(--surface-2); min-width: 0; overflow-x: auto; }
-.toolbar-group, .core-controls { display: flex; align-items: center; gap: 5px; }
+.toolbar-group, .core-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 5px; }
 .toolbar-separator { height: 25px; width: 1px; background: var(--border); }
 .toolbar-spacer { flex: 1; }
 .icon-button, .command-button, .button {
@@ -180,6 +189,8 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
 .modal-header .icon-button { margin-left: auto; border: 0; }
 .modal-body { min-height: 0; overflow: auto; padding: 16px; }
 .modal-footer { min-height: 56px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); background: var(--surface-2); }
+.modal-footer .footer-left { margin-right: auto; }
+.danger-text { color: var(--danger); }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px 16px; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; color: var(--muted); font-size: 11px; font-weight: 600; }
 .field-wide { grid-column: 1 / -1; }
@@ -189,6 +200,11 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
 .toggle-row { display: flex; align-items: center; gap: 9px; min-height: 34px; color: var(--text); font-size: 12px; cursor: pointer; }
 .toggle-row input { width: 16px; min-height: 16px; accent-color: var(--primary); }
 .form-error { padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border)); border-radius: 5px; color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); }
+.connection-summary { min-height: 54px; display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); }
+.connection-summary > div { min-width: 0; display: grid; gap: 3px; }
+.connection-summary small { color: var(--muted); font-weight: 400; overflow-wrap: anywhere; }
+.runtime-paths { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 7px 10px; padding-top: 13px; border-top: 1px solid var(--border); color: var(--muted); font-size: 11px; }
+.runtime-paths code { min-width: 0; color: var(--text); overflow-wrap: anywhere; }
 .section-title { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-weight: 800; color: var(--text); }
 .tun-readiness {
   display: grid;
@@ -219,14 +235,7 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
 .backup-action:hover { border-color: var(--blue); }
 .empty-state { min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); }
 .empty-state h3 { margin: 12px 0 3px; color: var(--text); }.empty-state p { margin: 0 0 14px; }
-
-.login-page, .boot-screen { width: 100%; height: 100%; display: grid; place-items: center; background: var(--bg); }
-.boot-screen { align-content: center; gap: 12px; color: var(--muted); }
-.login-panel { width: min(430px, calc(100vw - 32px)); padding: 28px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); box-shadow: var(--shadow); }
-.brand-mark { display: flex; align-items: center; gap: 9px; color: var(--primary); font-size: 18px; font-weight: 800; }
-.login-panel h1 { margin: 26px 0 6px; font-size: 22px; }
-.login-panel > p { margin: 0 0 20px; color: var(--muted); line-height: 1.5; }
-.login-panel .field, .login-panel .form-error { margin-bottom: 13px; }
+.disconnected-empty .lucide-icon { width: 30px; height: 30px; color: var(--danger); }
 
 .toast-stack { position: fixed; z-index: 50; top: 58px; right: 14px; display: flex; flex-direction: column; gap: 7px; width: min(360px, calc(100vw - 28px)); }
 .toast { min-height: 40px; display: flex; align-items: center; gap: 9px; padding: 9px 12px; border: 1px solid color-mix(in srgb, var(--green) 50%, var(--border)); border-radius: 5px; color: var(--text); background: var(--surface); box-shadow: 0 8px 24px rgba(20, 30, 40, .16); }
@@ -252,8 +261,12 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
 
 @media (max-width: 560px) {
   .brand { min-width: auto; border-right: 0; }
-  .toolbar { gap: 5px; }
-  .toolbar .command-button { font-size: 0; width: 32px; padding: 0; gap: 0; }
+  .connection-button .lucide-icon { display: none; }
+  .toolbar { gap: 5px; overflow: hidden; }
+  .toolbar > .toolbar-group:nth-of-type(2) { display: none; }
+  .toolbar > .toolbar-group:first-of-type .icon-button:nth-of-type(n+3) { display: none; }
+  .toolbar .add-server-button { width: 32px; padding: 0; gap: 0; font-size: 18px; }
+  .toolbar .add-server-button .button-label { display: none; }
   .list-header { display: grid; grid-template-columns: 1fr 1fr; height: auto; min-height: 46px; }
   .search-box { width: 100%; }
   .selection-actions { grid-column: 1 / -1; justify-content: flex-start; }

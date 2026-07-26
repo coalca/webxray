@@ -8,20 +8,20 @@ USER root
 RUN apk add --no-cache ca-certificates tini
 WORKDIR /app
 
-COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
-COPY --from=xray /usr/local/share/xray /usr/local/share/xray
+COPY --from=xray /usr/local/bin/xray /opt/webxray-defaults/xray/xray
+COPY --from=xray /usr/local/share/xray/geoip.dat /opt/webxray-defaults/xray/geoip.dat
+COPY --from=xray /usr/local/share/xray/geosite.dat /opt/webxray-defaults/xray/geosite.dat
 COPY backend/server ./server
 COPY frontend ./frontend
 
 RUN mkdir -p /data /app/data \
-    && chmod 755 /usr/local/bin/xray
+    && chmod 755 /opt/webxray-defaults/xray/xray
 
 ENV NODE_ENV=production \
     WEBXRAY_HOST=0.0.0.0 \
     WEBXRAY_DATA_DIR=/data \
     WEBXRAY_FRONTEND_DIR=/app/frontend \
-    XRAY_BIN=/usr/local/bin/xray \
-    XRAY_LOCATION_ASSET=/usr/local/share/xray
+    WEBXRAY_BUNDLED_XRAY_DIR=/opt/webxray-defaults/xray
 
 VOLUME ["/data"]
 EXPOSE 3000 10808/tcp 10808/udp
