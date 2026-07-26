@@ -59,12 +59,12 @@ jobs:
             fi
             sleep 1
           done
-          test -s "$data_dir/config.json"
-          test -s "$data_dir/state.json"
-          test -x "$data_dir/xray/xray"
-          test -s "$data_dir/xray/geoip.dat"
-          test -s "$data_dir/xray/geosite.dat"
-          token="$(node -e "console.log(JSON.parse(require('fs').readFileSync('$data_dir/config.json')).authToken)")"
+          docker exec webxray-smoke test -s /data/config.json
+          docker exec webxray-smoke test -s /data/state.json
+          docker exec webxray-smoke test -x /data/xray/xray
+          docker exec webxray-smoke test -s /data/xray/geoip.dat
+          docker exec webxray-smoke test -s /data/xray/geosite.dat
+          token="$(docker exec webxray-smoke node -e "console.log(JSON.parse(require('fs').readFileSync('/data/config.json')).authToken)")"
           curl --fail --silent -H "Authorization: Bearer $token" http://127.0.0.1:3000/api/state \
             | node -e "let body='';process.stdin.on('data',chunk=>body+=chunk).on('end',()=>{if(!JSON.parse(body).ok)process.exit(1)})"
 
