@@ -18,7 +18,6 @@ RUN mkdir -p /data /app/data \
 
 ENV NODE_ENV=production \
     WEBXRAY_HOST=0.0.0.0 \
-    WEBXRAY_PORT=3000 \
     WEBXRAY_DATA_DIR=/data \
     WEBXRAY_FRONTEND_DIR=/app/frontend \
     XRAY_BIN=/usr/local/bin/xray \
@@ -27,7 +26,7 @@ ENV NODE_ENV=production \
 VOLUME ["/data"]
 EXPOSE 3000 10808/tcp 10808/udp
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "server/index.mjs"]
+CMD ["node", "server/launcher.mjs"]
 
 HEALTHCHECK --interval=20s --timeout=3s --start-period=10s --retries=3 \
-  CMD ["node", "-e", "fetch('http://127.0.0.1:'+(process.env.WEBXRAY_PORT||3000)+'/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+  CMD ["node", "-e", "const fs=require('node:fs');const file=process.env.WEBXRAY_DATA_DIR+'/config.json';const port=process.env.WEBXRAY_PORT||JSON.parse(fs.readFileSync(file)).webPort||3000;fetch('http://127.0.0.1:'+port+'/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]

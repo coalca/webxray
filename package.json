@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node backend/server/index.mjs",
-    "dev:api": "node --watch backend/server/index.mjs",
+    "start": "node backend/server/launcher.mjs",
+    "dev:api": "node --watch backend/server/launcher.mjs",
     "dev:frontend": "node tools/serve-static.mjs frontend 5173",
     "build:ui": "node --check frontend/app.js",
     "test": "node --test backend/test/*.mjs"
