@@ -102,11 +102,11 @@ silently overwritten.
 ### Phase 5: acceptance and release
 
 - [x] Run all unit and syntax tests.
-- [ ] Build and start the real Docker image with a clean bind mount.
+- [x] Build and start the real Docker image with a clean bind mount.
 - [x] Verify the unauthenticated and authenticated UI at desktop and mobile
   widths.
 - [x] Build native packages with the real upstream runtime archives.
-- [ ] Commit, tag `v0.2.0`, push, and verify both GitHub workflows.
+- [x] Commit, tag `v0.2.0`, push, and verify both GitHub workflows.
 
 ## Release acceptance
 
