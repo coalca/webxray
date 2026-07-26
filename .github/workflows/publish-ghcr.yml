@@ -41,6 +41,33 @@ jobs:
           echo "value=$version" >> "$GITHUB_OUTPUT"
           echo "created=$created" >> "$GITHUB_OUTPUT"
 
+      - name: Smoke test Docker image and bind mount
+        shell: bash
+        run: |
+          data_dir="$(mktemp -d)"
+          cleanup() {
+            docker rm -f webxray-smoke >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker build --tag webxray:smoke .
+          docker run -d --name webxray-smoke -p 127.0.0.1:3000:3000 -v "$data_dir:/data" webxray:smoke
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/api/health >/dev/null; then break; fi
+            if [ "$attempt" = 30 ]; then
+              docker logs webxray-smoke
+              exit 1
+            fi
+            sleep 1
+          done
+          test -s "$data_dir/config.json"
+          test -s "$data_dir/state.json"
+          test -x "$data_dir/xray/xray"
+          test -s "$data_dir/xray/geoip.dat"
+          test -s "$data_dir/xray/geosite.dat"
+          token="$(node -e "console.log(JSON.parse(require('fs').readFileSync('$data_dir/config.json')).authToken)")"
+          curl --fail --silent -H "Authorization: Bearer $token" http://127.0.0.1:3000/api/state \
+            | node -e "let body='';process.stdin.on('data',chunk=>body+=chunk).on('end',()=>{if(!JSON.parse(body).ok)process.exit(1)})"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
