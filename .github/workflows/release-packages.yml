@@ -10,6 +10,10 @@ on:
         description: Package version without the v prefix
         required: true
         default: 0.2.0
+      release_tag:
+        description: Existing tag to publish, for example v0.2.0 (leave empty to only build)
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -41,6 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -64,6 +70,8 @@ jobs:
             xray_asset: Xray-linux-arm64-v8a.zip
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - name: Download Xray
         run: curl --fail --location --retry 3 --output xray.zip "https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/${{ matrix.xray_asset }}"
       - name: Build Deb package
@@ -82,6 +90,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - name: Download Windows runtimes
         run: |
           curl --fail --location --retry 3 --output node.zip "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-x64.zip"
@@ -97,7 +107,7 @@ jobs:
           path: dist/*.zip
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
     needs: [metadata, deb, windows]
     runs-on: ubuntu-latest
     steps:
@@ -109,6 +119,7 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --generate-notes --title "WebXray ${{ needs.metadata.outputs.version }}"
-          gh release upload "$GITHUB_REF_NAME" --clobber dist/*
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes --title "WebXray ${{ needs.metadata.outputs.version }}"
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber dist/*
