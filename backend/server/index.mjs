@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CoreController, tcpDelay } from './core.mjs';
 import { normalizeProfile, parseShareLink, parseSubscriptionText, toShareLink } from './profiles.mjs';
+import { serveStatic } from './static.mjs';
 import { Store } from './store.mjs';
 import { HttpError, now } from './utils.mjs';
 import {
@@ -14,10 +15,11 @@ import {
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dataDir = path.resolve(process.env.WEBXRAY_DATA_DIR || path.join(rootDir, 'data'));
+const frontendDir = path.resolve(process.env.WEBXRAY_FRONTEND_DIR || path.join(rootDir, 'frontend'));
 const port = Number(process.env.WEBXRAY_PORT || 3000);
 const host = process.env.WEBXRAY_HOST || '0.0.0.0';
 const authToken = process.env.WEBXRAY_AUTH_TOKEN || '';
-const corsOrigins = String(process.env.WEBXRAY_CORS_ORIGINS || '*')
+const corsOrigins = String(process.env.WEBXRAY_CORS_ORIGINS || '')
   .split(',')
   .map((item) => item.trim())
   .filter(Boolean);
@@ -43,6 +45,14 @@ function success(res, data = {}, extraHeaders = {}) {
   json(res, 200, { ok: true, ...data }, extraHeaders);
 }
 
+function applySecurityHeaders(res) {
+  res.setHeader('content-security-policy', "default-src 'self'; connect-src 'self' http: https:; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
+  res.setHeader('permissions-policy', 'camera=(), geolocation=(), microphone=()');
+  res.setHeader('referrer-policy', 'no-referrer');
+  res.setHeader('x-content-type-options', 'nosniff');
+  res.setHeader('x-frame-options', 'DENY');
+}
+
 function escapeRegExp(value) {
   return value.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
 }
@@ -56,6 +66,12 @@ function originMatches(pattern, origin) {
 function applyCors(req, res) {
   const origin = req.headers.origin;
   if (!origin) return true;
+  try {
+    const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
+    if (new URL(origin).host === (forwardedHost || req.headers.host)) return true;
+  } catch {
+    return false;
+  }
   const allowed = corsOrigins.some((pattern) => originMatches(pattern, origin));
   if (!allowed) return false;
   res.setHeader('vary', 'Origin');
@@ -454,23 +470,33 @@ async function handleApi(req, res, url) {
 }
 
 const server = createServer(async (req, res) => {
-  const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-  const corsAllowed = applyCors(req, res);
-  if (req.method === 'OPTIONS') {
-    res.writeHead(corsAllowed ? 204 : 403);
-    res.end();
-    return;
-  }
+  let url;
   try {
-    if (!corsAllowed) throw new HttpError(403, 'CORS origin is not allowed');
-    if (url.pathname.startsWith('/api/')) await handleApi(req, res, url);
-    else throw new HttpError(404, 'WebXray 后端仅提供 /api 接口');
+    applySecurityHeaders(res);
+    url = new URL(req.url || '/', 'http://localhost');
+    if (url.pathname.startsWith('/api/')) {
+      const corsAllowed = applyCors(req, res);
+      if (req.method === 'OPTIONS') {
+        res.writeHead(corsAllowed ? 204 : 403);
+        res.end();
+        return;
+      }
+      if (!corsAllowed) throw new HttpError(403, 'CORS origin is not allowed');
+      await handleApi(req, res, url);
+      return;
+    }
+    if (await serveStatic(req, res, frontendDir)) return;
+    throw new HttpError(404, '页面不存在');
   } catch (error) {
     const status = error.status || 500;
-    if (status >= 500) core.addLog('error', `${req.method} ${url.pathname}: ${error.stack || error.message}`);
+    if (status >= 500) core.addLog('error', `${req.method} ${url?.pathname || req.url}: ${error.stack || error.message}`);
     json(res, status, { ok: false, error: error.message || '内部错误', details: error.details });
   }
 });
+
+server.headersTimeout = 10_000;
+server.requestTimeout = 120_000;
+server.keepAliveTimeout = 5_000;
 
 server.listen(port, host, async () => {
   console.log(`WebXray listening on http://${host}:${port}`);

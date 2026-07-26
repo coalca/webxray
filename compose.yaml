@@ -1,11 +1,7 @@
 services:
   webxray:
-    build:
-      context: .
-      args:
-        XRAY_IMAGE: ${XRAY_IMAGE:-ghcr.io/xtls/xray-core:26.7.11}
-        NODE_IMAGE: ${NODE_IMAGE:-node:24-alpine}
-    image: webxray:local
+    image: ${WEBXRAY_IMAGE:-ghcr.io/coalca/webxray:260726}
+    pull_policy: always
     container_name: webxray
     restart: unless-stopped
     network_mode: host
@@ -17,7 +13,7 @@ services:
       TZ: ${TZ:-Asia/Shanghai}
       WEBXRAY_PORT: ${WEBXRAY_API_PORT:-3000}
       WEBXRAY_AUTH_TOKEN: ${WEBXRAY_AUTH_TOKEN:?Set WEBXRAY_AUTH_TOKEN in .env}
-      WEBXRAY_CORS_ORIGINS: ${WEBXRAY_CORS_ORIGINS:-*}
+      WEBXRAY_CORS_ORIGINS: ${WEBXRAY_CORS_ORIGINS:-}
     volumes:
       - webxray-data:/data
 

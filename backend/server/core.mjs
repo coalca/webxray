@@ -100,6 +100,7 @@ export class CoreController extends EventEmitter {
       sampledAt: null
     };
     this.previousTraffic = null;
+    this.operationQueue = Promise.resolve();
   }
 
   async init() {
@@ -154,11 +155,21 @@ export class CoreController extends EventEmitter {
     }
   }
 
+  enqueue(operation) {
+    const pending = this.operationQueue.then(operation);
+    this.operationQueue = pending.catch(() => {});
+    return pending;
+  }
+
   async writeCandidate(config) {
     await writeFile(this.candidatePath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
   }
 
-  async validate(config = this.config()) {
+  validate(config) {
+    return this.enqueue(() => this.validateNow(config || this.config()));
+  }
+
+  async validateNow(config) {
     if (!this.version) throw operationError(503, this.lastError || 'Xray 二进制不可用');
     await this.writeCandidate(config);
     const result = await runCommand(this.binary, ['run', '-test', '-c', this.candidatePath], {
@@ -226,10 +237,14 @@ export class CoreController extends EventEmitter {
     }
   }
 
-  async start() {
+  start() {
+    return this.enqueue(() => this.startNow());
+  }
+
+  async startNow() {
     if (this.child && this.child.exitCode === null) return this.status();
     const config = this.config();
-    await this.validate(config);
+    await this.validateNow(config);
     await this.assertTunReady(config);
     await rename(this.candidatePath, this.configPath);
     this.desiredRunning = true;
@@ -265,7 +280,11 @@ export class CoreController extends EventEmitter {
     return this.status();
   }
 
-  async stop() {
+  stop() {
+    return this.enqueue(() => this.stopNow());
+  }
+
+  async stopNow() {
     this.desiredRunning = false;
     const child = this.child;
     if (!child || child.exitCode !== null) return this.status();
@@ -281,11 +300,15 @@ export class CoreController extends EventEmitter {
     return this.status();
   }
 
-  async restart() {
+  restart() {
+    return this.enqueue(() => this.restartNow());
+  }
+
+  async restartNow() {
     const config = this.config();
-    await this.validate(config);
+    await this.validateNow(config);
     await this.assertTunReady(config);
-    await this.stop();
+    await this.stopNow();
     await rename(this.candidatePath, this.configPath);
     return this.startFromValidatedConfig(config);
   }
@@ -340,14 +363,17 @@ export class CoreController extends EventEmitter {
       if (child.exitCode !== null) {
         throw operationError(409, this.lastError || `Xray 启动后立即退出：${child.exitCode}`);
       }
-      await this.stop();
+      await this.stopNow();
       throw operationError(409, `Xray 已启动但 mixed 端口 ${host}:${mixedInbound.port} 未就绪：${ready.error}`);
     }
   }
 
-  async applyIfRunning() {
-    if (this.status().running) return this.restart();
-    return this.validate();
+  applyIfRunning() {
+    return this.enqueue(() => (
+      this.status().running
+        ? this.restartNow()
+        : this.validateNow(this.config())
+    ));
   }
 
   async sampleTraffic() {

@@ -17,12 +17,15 @@
     token: 'webxray-api-token',
     theme: 'webxray-theme'
   };
+  const defaultApiBase = window.WEBXRAY_DEFAULT_API_BASE_URL
+    || (location.origin === 'null' ? 'http://127.0.0.1:3000' : location.origin);
 
   const state = {
     auth: 'loading',
-    apiBase: normalizeApi(new URLSearchParams(location.search).get('api') || localStorage.getItem(STORAGE.api) || window.WEBXRAY_DEFAULT_API_BASE_URL || 'http://127.0.0.1:3000'),
+    apiBase: normalizeApi(new URLSearchParams(location.search).get('api') || localStorage.getItem(STORAGE.api) || defaultApiBase),
     token: localStorage.getItem(STORAGE.token) || '',
     authRequired: false,
+    loginError: '',
     app: null,
     group: '全部服务器',
     search: '',
@@ -86,10 +89,19 @@
   }
 
   async function request(path, options = {}) {
-    const response = await fetch(apiUrl(path), {
-      ...options,
-      headers: requestHeaders(Boolean(options.body), options.headers)
-    });
+    const { timeout = 30_000, ...fetchOptions } = options;
+    let response;
+    try {
+      response = await fetch(apiUrl(path), {
+        ...fetchOptions,
+        signal: fetchOptions.signal || AbortSignal.timeout(timeout),
+        headers: requestHeaders(Boolean(fetchOptions.body), fetchOptions.headers)
+      });
+    } catch (error) {
+      if (error.name === 'TimeoutError') throw new Error('请求超时，请检查后端状态');
+      if (error.name === 'TypeError') throw new Error(`无法连接后端：${state.apiBase}`);
+      throw error;
+    }
     const body = await response.json().catch(() => ({ ok: false, error: `HTTP ${response.status}` }));
     if (!response.ok || !body.ok) {
       const error = new Error(body.error || `HTTP ${response.status}`);
@@ -102,11 +114,29 @@
   function notify(message, type = 'success') {
     const id = crypto.randomUUID();
     state.toasts.push({ id, message, type });
-    render();
+    syncToasts();
     setTimeout(() => {
       state.toasts = state.toasts.filter((toast) => toast.id !== id);
-      render();
+      syncToasts();
     }, 3500);
+  }
+
+  function syncToasts() {
+    const stack = root.querySelector('.toast-stack');
+    if (stack) stack.outerHTML = toastView();
+  }
+
+  function syncBusyView() {
+    const shell = root.querySelector('.app-shell');
+    if (!shell) return;
+    shell.classList.toggle('is-busy', Boolean(state.busy));
+    shell.setAttribute('aria-busy', state.busy ? 'true' : 'false');
+    const progress = shell.querySelector('.operation-progress');
+    if (state.busy && !progress) {
+      shell.insertAdjacentHTML('afterbegin', '<div class="operation-progress" role="status" aria-label="操作进行中"></div>');
+    } else if (!state.busy) {
+      progress?.remove();
+    }
   }
 
   function formatBytes(value, speed = false) {
@@ -164,15 +194,18 @@
         state.auth = 'login';
         render();
       }
-    } catch {
+    } catch (error) {
+      state.loginError = error.message;
       state.auth = 'login';
       render();
     }
   }
 
   async function perform(key, action, successMessage) {
+    if (state.busy) return null;
     state.busy = key;
-    render();
+    syncBusyView();
+    let completed = false;
     try {
       const result = await action();
       if (result?.state || result?.core) {
@@ -184,6 +217,7 @@
       } else {
         await refresh();
       }
+      completed = true;
       if (successMessage) notify(successMessage);
       return result;
     } catch (error) {
@@ -191,7 +225,8 @@
       return null;
     } finally {
       state.busy = '';
-      render();
+      if (completed) render();
+      else syncBusyView();
     }
   }
 
@@ -203,7 +238,7 @@
       return;
     }
     if (state.auth === 'login') {
-      root.innerHTML = loginView();
+      root.innerHTML = loginView(state.loginError);
       bindLogin();
       return;
     }
@@ -218,10 +253,10 @@
         <form class="login-panel" id="login-form">
           <div class="brand-mark"><span>◎</span><span>WebXray</span></div>
           <h1>控制面登录</h1>
-          <p>像 aria2 Web UI 一样，这里直接填写要连接的后端 API 地址。</p>
+          <p>输入部署时配置的访问令牌；远程控制其他实例时可修改 API 地址。</p>
           <label class="field field-wide"><span>后端 API 地址</span><input name="apiBase" value="${attr(state.apiBase)}" placeholder="http://127.0.0.1:3000" required /></label>
           <label class="field field-wide"><span>访问令牌</span><input name="token" type="password" value="${attr(state.token)}" autocomplete="current-password" /></label>
-          ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
+          ${error ? `<div class="form-error" role="alert">${escapeHtml(error)}</div>` : ''}
           <button class="command-button primary full" type="submit">登录</button>
         </form>
       </main>
@@ -236,7 +271,8 @@
     const selectedProfiles = appState.profiles.filter((profile) => state.selected.has(profile.id));
     const coreClass = core.running ? 'running' : core.available ? 'stopped' : 'unavailable';
     return `
-      <div class="app-shell">
+      <div class="app-shell ${state.busy ? 'is-busy' : ''}" aria-busy="${state.busy ? 'true' : 'false'}">
+        ${state.busy ? '<div class="operation-progress" role="status" aria-label="操作进行中"></div>' : ''}
         <header class="topbar">
           <div class="brand"><span class="brand-icon">◎</span><strong>WebXray</strong><span>XRAY CONTROL</span></div>
           <nav class="menu-strip ${state.mobileMenu ? 'open' : ''}">
@@ -419,8 +455,8 @@
   function modalShell(title, subtitle, body, footer, wide = false) {
     return `
       <div class="modal-backdrop">
-        <section class="modal ${wide ? 'modal-wide' : ''}">
-          <header class="modal-header"><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle || '')}</p></div><button class="icon-button" data-action="modal-close">关闭</button></header>
+        <section class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <header class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${escapeHtml(subtitle || '')}</p></div><button class="icon-button" data-action="modal-close">关闭</button></header>
           <div class="modal-body">${body}</div>
           <footer class="modal-footer">${footer}</footer>
         </section>
@@ -646,21 +682,25 @@
   }
 
   function toastView() {
-    return `<div class="toast-stack">${state.toasts.map((toast) => `<div class="toast ${attr(toast.type)}"><span>${escapeHtml(toast.message)}</span></div>`).join('')}</div>`;
+    return `<div class="toast-stack" role="status" aria-live="polite">${state.toasts.map((toast) => `<div class="toast ${attr(toast.type)}"><span>${escapeHtml(toast.message)}</span></div>`).join('')}</div>`;
   }
 
   function bindLogin() {
     const form = document.getElementById('login-form');
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      submit.textContent = '连接中...';
       const data = new FormData(form);
       saveConnection(data.get('apiBase'), data.get('token'));
       try {
         await request('/api/auth/login', { method: 'POST', body: JSON.stringify({ token: state.token }) });
+        state.loginError = '';
         await refresh();
       } catch (error) {
-        root.innerHTML = loginView(error.message);
-        bindLogin();
+        state.loginError = error.message;
+        render();
       }
     });
   }
@@ -689,6 +729,7 @@
   document.addEventListener('click', async (event) => {
     const target = event.target.closest('button, [data-group], [data-select]');
     if (!target) return;
+    if (state.busy && target.matches('button')) return;
     if (target.dataset.open) {
       state.modal = { type: target.dataset.open };
       state.mobileMenu = false;
@@ -734,7 +775,7 @@
 
   document.addEventListener('keydown', (event) => {
     const row = event.target.closest?.('[data-profile-row]');
-    if (row && event.key === 'Enter') activate(row.dataset.profileRow);
+    if (row && event.target === row && event.key === 'Enter') activate(row.dataset.profileRow);
     if (event.key === 'Escape' && state.modal) {
       state.modal = null;
       render();
@@ -767,6 +808,7 @@
     } else if (action === 'logout') {
       try { await request('/api/auth/logout', { method: 'POST' }); } catch {}
       saveConnection(state.apiBase, '');
+      state.loginError = '';
       state.auth = 'login';
       state.app = null;
       render();
@@ -777,7 +819,11 @@
     } else if (action === 'core-restart') {
       await perform('restart', () => request('/api/core/restart', { method: 'POST' }), 'Xray 已重启');
     } else if (action === 'subscriptions-update') {
-      await perform('subscriptions', () => request('/api/subscriptions/update-all', { method: 'POST' }), '订阅更新完成');
+      const result = await perform('subscriptions', () => request('/api/subscriptions/update-all', { method: 'POST', timeout: 120_000 }));
+      if (result) {
+        const failures = result.results.filter((item) => !item.ok).length;
+        notify(failures ? `订阅更新完成，${failures} 项失败` : '订阅更新完成', failures ? 'error' : 'success');
+      }
     } else if (action === 'test') {
       await testSelected();
     } else if (action === 'config') {
@@ -897,10 +943,10 @@
       await refresh();
       notify('API 连接已更新');
     } catch (error) {
+      state.loginError = error.message;
       state.auth = 'login';
       state.app = null;
       render();
-      notify(error.message, 'error');
     }
   }
 
@@ -974,9 +1020,11 @@
     };
     const path = id ? `/api/subscriptions/${encodeURIComponent(id)}` : '/api/subscriptions';
     const method = id ? 'PUT' : 'POST';
-    await perform('subscription-save', () => request(path, { method, body: JSON.stringify(body) }), '订阅已保存');
-    state.modal = { type: 'subscriptions' };
-    render();
+    const result = await perform('subscription-save', () => request(path, { method, body: JSON.stringify(body) }), '订阅已保存');
+    if (result) {
+      state.modal = { type: 'subscriptions' };
+      render();
+    }
   }
 
   function editSubscription(id) {
@@ -994,14 +1042,14 @@
   }
 
   async function updateSubscription(id) {
-    await perform(`sub-update-${id}`, () => request(`/api/subscriptions/${encodeURIComponent(id)}/update`, { method: 'POST' }), '订阅更新完成');
-    state.modal = { type: 'subscriptions' };
+    const result = await perform(`sub-update-${id}`, () => request(`/api/subscriptions/${encodeURIComponent(id)}/update`, { method: 'POST', timeout: 45_000 }), '订阅更新完成');
+    if (result) state.modal = { type: 'subscriptions' };
   }
 
   async function deleteSubscription(id) {
     if (!confirm('删除该订阅及其节点？')) return;
-    await perform(`sub-delete-${id}`, () => request(`/api/subscriptions/${encodeURIComponent(id)}`, { method: 'DELETE' }), '订阅已删除');
-    state.modal = { type: 'subscriptions' };
+    const result = await perform(`sub-delete-${id}`, () => request(`/api/subscriptions/${encodeURIComponent(id)}`, { method: 'DELETE' }), '订阅已删除');
+    if (result) state.modal = { type: 'subscriptions' };
   }
 
   async function saveSettings(form) {
@@ -1098,12 +1146,16 @@
     }
   }
 
+  let polling = false;
   setInterval(async () => {
-    if (state.auth !== 'ready') return;
+    if (polling || document.hidden || state.auth !== 'ready') return;
+    polling = true;
     try {
-      const status = await request('/api/core/status');
+      const [status, logResult] = await Promise.all([
+        request('/api/core/status'),
+        request(`/api/logs?after=${state.lastLogId}`)
+      ]);
       state.app = state.app ? { ...state.app, core: status.core, tun: status.tun || state.app.tun } : state.app;
-      const logResult = await request(`/api/logs?after=${state.lastLogId}`);
       if (logResult.logs.length) {
         state.lastLogId = logResult.logs.at(-1).id;
         state.logs = [...state.logs, ...logResult.logs].slice(-700);
@@ -1116,6 +1168,8 @@
         state.app = null;
         render();
       }
+    } finally {
+      polling = false;
     }
   }, 1500);
 

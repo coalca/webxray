@@ -11,6 +11,7 @@ WORKDIR /app
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 COPY --from=xray /usr/local/share/xray /usr/local/share/xray
 COPY backend/server ./server
+COPY frontend ./frontend
 
 RUN mkdir -p /data /app/data \
     && chmod 755 /usr/local/bin/xray
@@ -19,7 +20,7 @@ ENV NODE_ENV=production \
     WEBXRAY_HOST=0.0.0.0 \
     WEBXRAY_PORT=3000 \
     WEBXRAY_DATA_DIR=/data \
-    WEBXRAY_CORS_ORIGINS=* \
+    WEBXRAY_FRONTEND_DIR=/app/frontend \
     XRAY_BIN=/usr/local/bin/xray \
     XRAY_LOCATION_ASSET=/usr/local/share/xray
 

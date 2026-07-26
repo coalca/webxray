@@ -8,7 +8,6 @@ data
 npm-debug.log*
 README.md
 backend/test
-frontend
 tools
 package.json
 package-lock.json
