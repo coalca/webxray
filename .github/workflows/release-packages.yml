@@ -9,7 +9,7 @@ on:
       version:
         description: Package version without the v prefix
         required: true
-        default: 0.2.1
+        default: 0.2.2
       release_tag:
         description: Existing tag to publish, for example v0.2.0 (leave empty to only build)
         required: false

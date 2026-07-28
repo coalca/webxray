@@ -41,7 +41,7 @@ cat webxray-data/config.json
 Deb 包：普通 Intel/AMD 电脑选 `amd64`，ARM 服务器选 `arm64`。
 
 ```bash
-sudo apt install ./webxray_0.2.1_amd64.deb
+sudo apt install ./webxray_0.2.2_amd64.deb
 sudo webxray token
 ```
 
@@ -67,7 +67,7 @@ sudo apt remove webxray
 
 Windows 版本没有安装器。到
 [GitHub Releases](https://github.com/coalca/webxray/releases) 下载
-`webxray_0.2.1_windows_x64.zip`，解压到不会随意移动的目录，例如
+`webxray_0.2.2_windows_x64.zip`，解压到不会随意移动的目录，例如
 `C:\WebXray`。
 
 Windows 包提供两种运行方式，二选一，不能同时运行。
