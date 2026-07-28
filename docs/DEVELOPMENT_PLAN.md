@@ -87,6 +87,7 @@ silently overwritten.
 
 - [x] Add a hardened systemd unit and Deb lifecycle scripts.
 - [x] Add a portable Windows command with `-s` service actions.
+- [x] Provide separate, obvious Windows entry points for direct and service modes.
 - [x] Use WinSW to provide the Windows Service Control Manager protocol.
 - [x] Bundle Node, Xray and Geo data in the Windows archive.
 - [x] Keep application files separate from user data for in-place updates.

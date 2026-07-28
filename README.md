@@ -20,7 +20,7 @@ docker run -d \
   --cap-add NET_ADMIN \
   --device /dev/net/tun:/dev/net/tun \
   -v "$PWD/webxray-data:/data" \
-  ghcr.io/coalca/webxray:260727
+  ghcr.io/coalca/webxray:260728
 ```
 
 第一次启动后查看访问令牌：
@@ -41,7 +41,7 @@ cat webxray-data/config.json
 Deb 包：普通 Intel/AMD 电脑选 `amd64`，ARM 服务器选 `arm64`。
 
 ```bash
-sudo apt install ./webxray_0.2.0_amd64.deb
+sudo apt install ./webxray_0.2.1_amd64.deb
 sudo webxray token
 ```
 
@@ -67,17 +67,29 @@ sudo apt remove webxray
 
 Windows 版本没有安装器。到
 [GitHub Releases](https://github.com/coalca/webxray/releases) 下载
-`webxray_0.2.0_windows_x64.zip`，解压到不会随意移动的目录，例如
+`webxray_0.2.1_windows_x64.zip`，解压到不会随意移动的目录，例如
 `C:\WebXray`。
 
-以管理员身份打开 CMD 或 PowerShell，进入该目录并运行：
+Windows 包提供两种运行方式，二选一，不能同时运行。
+
+### 方式一：直接运行
+
+双击 `WebXray-Run.cmd`。它会显示访问令牌、打开浏览器并在当前窗口运行。保持黑色命令
+窗口开启即可；关闭窗口后 WebXray 随即停止。这种方式不安装服务、不随系统启动，适合
+先体验或偶尔使用，也不需要管理员权限。
+
+### 方式二：安装为系统服务
+
+右键点击 `WebXray-Install-Service.cmd`，选择“以管理员身份运行”。它会显示访问令牌、
+注册并启动 `WebXray` 服务，然后打开浏览器。服务会在后台运行并随 Windows 自动启动。
+
+也可以管理员身份打开 CMD 或 PowerShell，进入解压目录并运行：
 
 ```bat
 webxray.cmd -s install
 ```
 
-命令会输出访问令牌、注册 `WebXray` Windows 服务、启动服务并打开浏览器。服务管理
-命令如下：
+服务管理命令如下：
 
 ```bat
 webxray.cmd -s status

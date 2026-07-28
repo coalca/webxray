@@ -9,7 +9,7 @@ on:
       version:
         description: Package version without the v prefix
         required: true
-        default: 0.2.0
+        default: 0.2.1
       release_tag:
         description: Existing tag to publish, for example v0.2.0 (leave empty to only build)
         required: false
@@ -100,7 +100,10 @@ jobs:
       - name: Build portable Windows package
         run: sh packaging/build-windows.sh "${{ needs.metadata.outputs.version }}" node.zip xray.zip WinSW-x64.exe dist
       - name: Inspect Windows package
-        run: unzip -l dist/*.zip
+        run: |
+          unzip -l dist/*.zip
+          unzip -Z1 dist/*.zip | grep -F 'WebXray/WebXray-Run.cmd'
+          unzip -Z1 dist/*.zip | grep -F 'WebXray/WebXray-Install-Service.cmd'
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64
