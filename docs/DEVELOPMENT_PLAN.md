@@ -32,4 +32,4 @@ WebXray 0.3.0 是一次界面、交付和文档共同升级。首页必须让没
 - [x] 所有单元、浏览器和打包测试通过。
 - [x] Docker、Deb 和 Windows 发行产物完成验收。
 - [x] Cloudflare Pages 部署完成。
-- [ ] `v0.3.0` 提交、标签、GitHub Release 和 GHCR 完成。
+- [x] `v0.3.0` 提交、标签、GitHub Release 和 GHCR 完成。
