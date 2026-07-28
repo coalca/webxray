@@ -6,6 +6,7 @@ import { normalizeProfile, parseShareLink, parseSubscriptionText, toShareLink } 
 import { serveStatic } from './static.mjs';
 import { Store } from './store.mjs';
 import { HttpError, now } from './utils.mjs';
+import { systemInfo } from './meta.mjs';
 import {
   normalizeBackupState,
   normalizeRouting,
@@ -23,6 +24,7 @@ const corsOrigins = String(process.env.WEBXRAY_CORS_ORIGINS || '')
   .split(',')
   .map((item) => item.trim())
   .filter(Boolean);
+const system = systemInfo();
 const store = new Store(dataDir);
 await store.init();
 const core = new CoreController({
@@ -224,7 +226,7 @@ async function handleApi(req, res, url) {
   const pathname = url.pathname;
 
   if (pathname === '/api/health') {
-    return success(res, { status: 'ok', core: core.status().running ? 'running' : 'stopped' });
+    return success(res, { status: 'ok', version: system.version, core: core.status().running ? 'running' : 'stopped' });
   }
   if (pathname === '/api/auth/status') {
     return success(res, { required: Boolean(authToken), authenticated: authenticated(req) });
@@ -244,7 +246,7 @@ async function handleApi(req, res, url) {
   if (!authenticated(req)) throw new HttpError(401, '需要登录');
 
   if (pathname === '/api/state' && method === 'GET') {
-    return success(res, { state: store.get(), core: core.status(), tun: await core.tunStatus() });
+    return success(res, { state: store.get(), core: core.status(), tun: await core.tunStatus(), system });
   }
   if (pathname === '/api/core/status' && method === 'GET') {
     return success(res, { core: core.status(), tun: await core.tunStatus() });

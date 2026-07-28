@@ -9,9 +9,9 @@ on:
       version:
         description: Package version without the v prefix
         required: true
-        default: 0.2.3
+        default: 0.3.0
       release_tag:
-        description: Existing tag to publish, for example v0.2.0 (leave empty to only build)
+        description: Existing tag to publish, for example v0.3.0 (leave empty to only build)
         required: false
         default: ''
 
@@ -42,6 +42,7 @@ jobs:
           echo "value=$version" >> "$GITHUB_OUTPUT"
 
   checks:
+    needs: metadata
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +53,7 @@ jobs:
           node-version: 24
       - name: Run tests
         run: |
+          test "$(node -p "require('./package.json').version")" = "${{ needs.metadata.outputs.version }}"
           npm test
           npm run build:ui
           sh -n packaging/build-deb.sh
@@ -66,20 +68,32 @@ jobs:
         include:
           - deb_arch: amd64
             xray_asset: Xray-linux-64.zip
+            node_arch: x64
           - deb_arch: arm64
             xray_asset: Xray-linux-arm64-v8a.zip
+            node_arch: arm64
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.release_tag || github.ref }}
       - name: Download Xray
         run: curl --fail --location --retry 3 --output xray.zip "https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/${{ matrix.xray_asset }}"
+      - name: Download Node.js
+        run: curl --fail --location --retry 3 --output node.tar.xz "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${{ matrix.node_arch }}.tar.xz"
       - name: Build Deb package
-        run: sh packaging/build-deb.sh "${{ needs.metadata.outputs.version }}" "${{ matrix.deb_arch }}" xray.zip dist
+        run: sh packaging/build-deb.sh "${{ needs.metadata.outputs.version }}" "${{ matrix.deb_arch }}" xray.zip node.tar.xz dist
       - name: Inspect Deb package
         run: |
           dpkg-deb --info dist/*.deb
           dpkg-deb --contents dist/*.deb
+          work="$(mktemp -d)"
+          dpkg-deb -x dist/*.deb "$work"
+          test -x "$work/usr/lib/webxray/runtime/node"
+          test -x "$work/usr/lib/webxray/defaults/xray/xray"
+          if [ "${{ matrix.deb_arch }}" = amd64 ]; then
+            "$work/usr/lib/webxray/runtime/node" --version
+            "$work/usr/lib/webxray/defaults/xray/xray" -version
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: deb-${{ matrix.deb_arch }}
@@ -104,14 +118,92 @@ jobs:
           unzip -l dist/*.zip
           unzip -Z1 dist/*.zip | grep -F 'WebXray/WebXray-Run.cmd'
           unzip -Z1 dist/*.zip | grep -F 'WebXray/WebXray-Install-Service.cmd'
+          unzip -Z1 dist/*.zip | grep -F 'WebXray/WebXray-Uninstall-Service.cmd'
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64
           path: dist/*.zip
 
+  windows-smoke:
+    needs: [metadata, windows]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64
+          path: dist
+      - name: Extract Windows package
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem dist\*.zip | Select-Object -First 1
+          Expand-Archive -Path $archive.FullName -DestinationPath extracted
+      - name: Smoke test portable mode
+        shell: pwsh
+        run: |
+          $root = (Resolve-Path extracted\WebXray).Path
+          $node = Join-Path $root 'runtime\node.exe'
+          $launcher = Join-Path $root 'app\server\launcher.mjs'
+          $env:WEBXRAY_DATA_DIR = Join-Path $root 'portable-test-data'
+          $env:WEBXRAY_FRONTEND_DIR = Join-Path $root 'app\frontend'
+          $env:WEBXRAY_BUNDLED_XRAY_DIR = Join-Path $root 'defaults\xray'
+          $env:WEBXRAY_DISTRIBUTION = 'windows-portable'
+          $env:WEBXRAY_HOST = '127.0.0.1'
+          $env:WEBXRAY_PORT = '3390'
+          $token = (& $node $launcher --print-token).Trim()
+          if ($token.Length -lt 32) { throw 'Portable token was not generated' }
+          $process = Start-Process -FilePath $node -ArgumentList "`"$launcher`"" -PassThru -NoNewWindow
+          try {
+            for ($attempt = 1; $attempt -le 30; $attempt++) {
+              try {
+                $health = Invoke-RestMethod http://127.0.0.1:3390/api/health
+                if ($health.ok) { break }
+              } catch {
+                if ($attempt -eq 30) { throw }
+                Start-Sleep -Seconds 1
+              }
+            }
+            $headers = @{ Authorization = "Bearer $token" }
+            $state = Invoke-RestMethod http://127.0.0.1:3390/api/state -Headers $headers
+            if ($state.system.distribution -ne 'windows-portable') { throw 'Portable distribution metadata is wrong' }
+            if ($state.system.platform -ne 'win32') { throw 'Windows platform metadata is wrong' }
+          } finally {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+          }
+      - name: Smoke test Windows service
+        shell: pwsh
+        run: |
+          $root = (Resolve-Path extracted\WebXray).Path
+          $command = Join-Path $root 'webxray.cmd'
+          $service = Join-Path $root 'WebXrayService.exe'
+          Remove-Item Env:WEBXRAY_DATA_DIR -ErrorAction SilentlyContinue
+          Remove-Item Env:WEBXRAY_FRONTEND_DIR -ErrorAction SilentlyContinue
+          Remove-Item Env:WEBXRAY_BUNDLED_XRAY_DIR -ErrorAction SilentlyContinue
+          $env:WEBXRAY_PORT = '3391'
+          $token = (& $command token).Trim()
+          try {
+            & $service install
+            if ($LASTEXITCODE -ne 0) { throw 'Service installation failed' }
+            & $service start
+            if ($LASTEXITCODE -ne 0) { throw 'Service start failed' }
+            for ($attempt = 1; $attempt -le 30; $attempt++) {
+              try {
+                $headers = @{ Authorization = "Bearer $token" }
+                $state = Invoke-RestMethod http://127.0.0.1:3391/api/state -Headers $headers
+                if ($state.ok) { break }
+              } catch {
+                if ($attempt -eq 30) { throw }
+                Start-Sleep -Seconds 1
+              }
+            }
+            if ($state.system.distribution -ne 'windows-service') { throw 'Service distribution metadata is wrong' }
+          } finally {
+            & $service stop | Out-Null
+            & $service uninstall | Out-Null
+          }
+
   release:
     if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
-    needs: [metadata, deb, windows]
+    needs: [metadata, deb, windows, windows-smoke]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

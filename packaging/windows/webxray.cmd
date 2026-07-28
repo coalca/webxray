@@ -8,17 +8,28 @@ set "SERVICE=%~dp0WebXrayService.exe"
 set "WEBXRAY_DATA_DIR=%~dp0data"
 set "WEBXRAY_FRONTEND_DIR=%~dp0app\frontend"
 set "WEBXRAY_BUNDLED_XRAY_DIR=%~dp0defaults\xray"
-set "WEBXRAY_HOST=0.0.0.0"
+set "WEBXRAY_HOST=127.0.0.1"
+set "WEBXRAY_DISTRIBUTION=windows-portable"
 set "NODE_ENV=production"
 
 if /I "%~1"=="-s" goto service
 if /I "%~1"=="token" goto token
+if /I "%~1"=="url" goto url
+if /I "%~1"=="doctor" goto doctor
 
 "%NODE%" "%LAUNCHER%" %*
 exit /b %ERRORLEVEL%
 
 :token
 "%NODE%" "%LAUNCHER%" --print-token
+exit /b %ERRORLEVEL%
+
+:url
+"%NODE%" "%LAUNCHER%" --print-url
+exit /b %ERRORLEVEL%
+
+:doctor
+"%NODE%" "%LAUNCHER%" --doctor
 exit /b %ERRORLEVEL%
 
 :service
@@ -36,7 +47,9 @@ if /I "%~2"=="install" (
   if errorlevel 1 exit /b %ERRORLEVEL%
   "%SERVICE%" start
   if errorlevel 1 exit /b %ERRORLEVEL%
-  start "" "http://127.0.0.1:3000"
+  for /f "delims=" %%U in ('call "%~f0" url') do set "WEBXRAY_URL=%%U"
+  if not defined WEBXRAY_URL set "WEBXRAY_URL=http://127.0.0.1:3000"
+  start "" "%WEBXRAY_URL%"
   exit /b 0
 )
 if /I "%~2"=="uninstall" (

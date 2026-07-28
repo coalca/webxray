@@ -1,160 +1,98 @@
 # WebXray
 
-WebXray 是一个浏览器里的 Xray 客户端控制台，支持节点、订阅、路由、日志、备份和
-Xray 核心启停。页面打开后直接进入主界面：右上角绿点表示后端已连接，红点表示未
-连接；点击状态即可设置后端地址和访问令牌。
+WebXray 是一个在浏览器中管理 Xray 的本地控制台。它负责节点与订阅、Xray 核心启停、
+Mixed 代理、路由、Linux TUN、运行日志和数据备份。
 
-项目提供 Docker、Debian/Ubuntu Deb 包和 Windows 免安装 ZIP。三种版本使用同一套
-前端和后端。
+![WebXray v0.3.0 控制台](docs/assets/console-light.png)
 
-## Docker 使用
+打开页面就是主控制台。右上角显示 Web 后端连接状态，首页运行区显示 Xray 核心状态、
+当前节点、代理入口和实时流量。这两个状态彼此独立，后端已连接不代表 Xray 已启动。
 
-服务器、NAS 和 Linux 用户优先使用 Docker。下面的命令只需要替换镜像日期版本：
+## 选择版本
+
+| 版本 | 适合谁 | 运行方式 | TUN | 数据目录 |
+| --- | --- | --- | --- | --- |
+| Docker | Linux 服务器、NAS、容器用户 | 容器自动运行 | Linux 宿主支持 | 挂载到 `/data` |
+| Deb | Debian、Ubuntu 实机或虚拟机 | systemd 服务 | Linux 支持 | `/var/lib/webxray` |
+| Windows ZIP | Windows 桌面和服务器 | 直接运行或注册服务 | 不支持 | 解压目录的 `data` |
+
+只想先体验：Windows 使用 `WebXray-Run.cmd`，Linux 服务器优先使用 Docker 普通代理模式。
+需要开机自启：Windows 注册服务，Deb 安装后自动启用 systemd。需要透明代理：使用 Linux
+Deb，或使用 Docker TUN 模式。
+
+完整能力边界见 [平台支持矩阵](docs/PLATFORMS.md)。
+
+## 快速开始
+
+### Docker 普通代理
 
 ```bash
-mkdir -p webxray-data
-docker run -d \
-  --name webxray \
-  --restart unless-stopped \
-  --network host \
-  --cap-add NET_ADMIN \
-  --device /dev/net/tun:/dev/net/tun \
-  -v "$PWD/webxray-data:/data" \
-  ghcr.io/coalca/webxray:260728
+mkdir webxray && cd webxray
+curl -O https://raw.githubusercontent.com/coalca/webxray/main/deploy/docker/compose.yaml
+docker compose up -d
+docker compose exec webxray node server/launcher.mjs --print-token
 ```
 
-第一次启动后查看访问令牌：
+浏览器打开 `http://服务器地址:3000`，点击右上角“未连接”，输入上一步显示的令牌。默认
+Compose 允许局域网访问 Web 页面，但 Mixed 代理端口只绑定宿主机本地地址。
+
+需要 Linux TUN 时使用 [Docker 安装说明](docs/install/docker.md) 中的专用配置。
+
+### Debian / Ubuntu
+
+从 [GitHub Releases](https://github.com/coalca/webxray/releases) 下载对应架构的 Deb：
 
 ```bash
-cat webxray-data/config.json
-```
-
-浏览器打开 `http://服务器地址:3000`，点击右上角红色“未连接”，填入
-`config.json` 里的 `authToken`。页面连接成功后状态变绿。
-
-不使用 TUN 时，可以从 Docker 命令中删除 `--cap-add` 和 `--device`。普通 mixed
-代理仍可使用，默认地址为 `127.0.0.1:10808`。
-
-## Debian 和 Ubuntu
-
-在 [GitHub Releases](https://github.com/coalca/webxray/releases) 下载与机器匹配的
-Deb 包：普通 Intel/AMD 电脑选 `amd64`，ARM 服务器选 `arm64`。
-
-```bash
-sudo apt install ./webxray_0.2.3_amd64.deb
+sudo apt install ./webxray_0.3.0_amd64.deb
 sudo webxray token
+sudo webxray -s status
 ```
 
-第二条命令输出访问令牌。浏览器打开 `http://服务器地址:3000`，在右上角连接设置中
-输入令牌。安装包会自动创建并启动 systemd 服务。
+Deb 已内置所需 Node.js 运行时，不依赖系统中的 Node 版本。详细命令和 TUN 条件见
+[Linux 安装说明](docs/install/linux.md)。
 
-常用命令：
+### Windows
 
-```bash
-systemctl status webxray
-sudo webxray -s restart
-sudo webxray -s stop
-sudo webxray -s start
-```
+下载 `webxray_0.3.0_windows_x64.zip` 并解压到固定目录：
 
-Deb 数据保存在 `/var/lib/webxray`。卸载软件不会删除这个目录：
+- 双击 `WebXray-Run.cmd`：前台直接运行，关闭窗口即停止，不需要管理员权限。
+- 管理员运行 `WebXray-Install-Service.cmd`：安装为自动启动的 Windows 服务。
+- 管理员运行 `WebXray-Uninstall-Service.cmd`：移除服务，保留 `data`。
 
-```bash
-sudo apt remove webxray
-```
-
-## Windows 免安装版
-
-Windows 版本没有安装器。到
-[GitHub Releases](https://github.com/coalca/webxray/releases) 下载
-`webxray_0.2.3_windows_x64.zip`，解压到不会随意移动的目录，例如
-`C:\WebXray`。
-
-Windows 包提供两种运行方式，二选一，不能同时运行。
-
-### 方式一：直接运行
-
-双击 `WebXray-Run.cmd`。它会显示访问令牌、打开浏览器并在当前窗口运行。保持黑色命令
-窗口开启即可；关闭窗口后 WebXray 随即停止。这种方式不安装服务、不随系统启动，适合
-先体验或偶尔使用，也不需要管理员权限。
-
-### 方式二：安装为系统服务
-
-右键点击 `WebXray-Install-Service.cmd`，选择“以管理员身份运行”。它会显示访问令牌、
-注册并启动 `WebXray` 服务，然后打开浏览器。服务会在后台运行并随 Windows 自动启动。
-
-也可以管理员身份打开 CMD 或 PowerShell，进入解压目录并运行：
-
-```bat
-webxray.cmd -s install
-```
-
-服务管理命令如下：
-
-```bat
-webxray.cmd -s status
-webxray.cmd -s restart
-webxray.cmd -s stop
-webxray.cmd -s start
-webxray.cmd -s uninstall
-webxray.cmd token
-```
-
-Windows 数据保存在解压目录的 `data` 文件夹。更新时先停止服务，替换程序文件但保留
-`data`，然后重新启动服务。Windows 版本支持 mixed 代理，不支持本项目的 Linux TUN
-自动路由。
+Windows 版不会修改系统代理，也不提供 Linux TUN。详细说明见
+[Windows 安装说明](docs/install/windows.md)。
 
 ## 数据目录
 
-Docker 的 `webxray-data`、Deb 的 `/var/lib/webxray` 和 Windows 的 `data` 内容一致：
+三个发行版本使用相同的数据结构：
 
 ```text
 data/
 ├── config.json                 Web 端口、访问令牌、CORS、时区
-├── state.json                  节点、订阅、路由、界面设置
+├── state.json                  节点、订阅、路由和运行设置
+├── logs/                       Windows 服务日志
 └── xray/
-    ├── xray 或 xray.exe        Xray 核心
-    ├── geoip.dat               IP 规则数据
-    ├── geosite.dat             域名规则数据
-    ├── config.json             当前已校验的 Xray 配置
-    └── config.candidate.json   正在校验的候选配置
+    ├── xray 或 xray.exe        可替换的 Xray 核心
+    ├── geoip.dat               可替换的 GeoIP 数据
+    ├── geosite.dat             可替换的 GeoSite 数据
+    ├── config.json             最近一次已验证的运行配置
+    └── config.candidate.json   配置校验候选文件
 ```
 
-首次启动只补齐不存在的 Xray 和 Geo 文件，不会覆盖你已经替换的文件。`config.json` 和
-`state.json` 必须一起备份，其中可能包含访问令牌、节点密钥和订阅地址。
+首次启动只补齐缺少的 Xray 和 Geo 文件，不覆盖用户替换的文件。升级前备份整个数据目录。
 
-## 修改 Web 配置
+## 文档
 
-`config.json` 示例：
-
-```json
-{
-  "authToken": "自动生成的 64 位随机令牌",
-  "webPort": 3000,
-  "corsOrigins": [],
-  "timezone": "Asia/Shanghai"
-}
-```
-
-修改后重启 WebXray。`authToken` 至少 32 个字符。Docker 也可以使用
-`WEBXRAY_AUTH_TOKEN`、`WEBXRAY_PORT`、`WEBXRAY_CORS_ORIGINS` 和 `TZ` 环境变量覆盖
-文件中的值。
-
-## TUN 模式
-
-TUN 自动路由只支持 Linux。Docker 需要宿主网络、`NET_ADMIN` 和 `/dev/net/tun`；
-Deb 服务已带 `CAP_NET_ADMIN`，但宿主机仍必须存在 `/dev/net/tun`。远程管理服务器或
-已有复杂策略路由时，先关闭“自动写入系统 CIDR 路由”，再自行维护宿主机路由。
-
-## 安全说明
-
-- 不要公开或提交数据目录中的 `config.json` 和 `state.json`。
-- 不要把 Web 端口直接暴露到不可信公网，远程访问优先使用 HTTPS 反向代理。
-- 同一个 WebXray 页面和后端不需要 CORS；跨域控制其他实例时才设置
-  `corsOrigins`。
-- 容器或系统服务管理员可以读取节点密钥，这是本地控制 Xray 所必需的权限。
-
-完整的实现和验收计划见 [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)。
+- [文档索引](docs/README.md)
+- [平台支持矩阵](docs/PLATFORMS.md)
+- [Docker 安装](docs/install/docker.md)
+- [Deb / Linux 安装](docs/install/linux.md)
+- [Windows 安装](docs/install/windows.md)
+- [安全边界](docs/SECURITY.md)
+- [升级与回滚](docs/UPGRADING.md)
+- [仓库结构](docs/ARCHITECTURE.md)
+- [v0.3.0 开发与验收计划](docs/DEVELOPMENT_PLAN.md)
+- [版本记录](CHANGELOG.md)
 
 WebXray 使用 MIT License。发行包内的 Xray-core、Node.js、WinSW 和 Geo 数据许可见
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

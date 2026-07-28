@@ -1,4 +1,4 @@
-export function createDefaultState() {
+export function createDefaultState(environment = process.env) {
   return {
     version: 1,
     activeProfileId: null,
@@ -6,7 +6,7 @@ export function createDefaultState() {
     subscriptions: [],
     settings: {
       mixedPort: 10808,
-      allowLan: true,
+      allowLan: String(environment.WEBXRAY_DEFAULT_ALLOW_LAN || '').toLowerCase() === 'true',
       udpEnabled: true,
       sniffingEnabled: true,
       routeOnly: false,
@@ -37,8 +37,8 @@ export function createDefaultState() {
   };
 }
 
-export function normalizeState(value) {
-  const defaults = createDefaultState();
+export function normalizeState(value, environment = process.env) {
+  const defaults = createDefaultState(environment);
   if (!value || typeof value !== 'object') return defaults;
   return {
     ...defaults,

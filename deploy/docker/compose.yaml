@@ -1,0 +1,11 @@
+services:
+  webxray:
+    image: ghcr.io/coalca/webxray:latest
+    container_name: webxray
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "127.0.0.1:10808:10808/tcp"
+      - "127.0.0.1:10808:10808/udp"
+    volumes:
+      - ./data:/data

@@ -3,7 +3,7 @@ Version: @VERSION@
 Section: net
 Priority: optional
 Architecture: @ARCH@
-Depends: nodejs (>= 18), ca-certificates
+Depends: ca-certificates
 Maintainer: WebXray <anonymous@users.noreply.github.com>
 Homepage: https://github.com/coalca/webxray
 Description: Browser control panel for the Xray client core

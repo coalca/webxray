@@ -34,7 +34,7 @@
     busy: '',
     logs: [],
     lastLogId: 0,
-    bottomOpen: true,
+    bottomOpen: false,
     bottomTab: 'logs',
     generatedConfig: null,
     theme: localStorage.getItem(STORAGE.theme) || 'light',
@@ -77,7 +77,27 @@
       menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
       play: '<path d="m6 3 14 9-14 9Z"/>',
       stop: '<rect width="14" height="14" x="5" y="5" rx="1"/>',
-      restart: '<path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/>'
+      restart: '<path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/>',
+      server: '<rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 6h.01M6 18h.01"/>',
+      rss: '<path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/>',
+      route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+      settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/>',
+      database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+      plus: '<path d="M5 12h14M12 5v14"/>',
+      clipboard: '<rect width="14" height="18" x="5" y="3" rx="2"/><path d="M9 3V1h6v2M9 8h6M9 12h6"/>',
+      refresh: '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12A9 9 0 0 1 18.5 5.8L21 8M3 16v5h5M21 8V3h-5"/>',
+      search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+      zap: '<path d="M4 14a1 1 0 0 1-.78-1.63l9-11a.5.5 0 0 1 .87.44l-1.68 6.7A1 1 0 0 0 12.38 10H20a1 1 0 0 1 .78 1.63l-9 11a.5.5 0 0 1-.87-.44l1.68-6.7A1 1 0 0 0 11.62 14Z"/>',
+      pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+      copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+      trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v6M14 11v6"/>',
+      x: '<path d="M18 6 6 18M6 6l12 12"/>',
+      chevronUp: '<path d="m18 15-6-6-6 6"/>',
+      chevronDown: '<path d="m6 9 6 6 6-6"/>',
+      download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+      upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+      shieldAlert: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3Z"/><path d="M12 8v4M12 16h.01"/>',
+      activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'
     };
     return `<svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || ''}</svg>`;
   }
@@ -197,7 +217,7 @@
 
   async function refresh(renderView = true) {
     const result = await request('/api/state');
-    state.app = { state: result.state, core: result.core, tun: result.tun };
+    state.app = { state: result.state, core: result.core, tun: result.tun, system: result.system };
     state.connection = 'connected';
     state.connectionError = '';
     const validGroups = groups();
@@ -245,7 +265,8 @@
         state.app = {
           state: result.state || state.app.state,
           core: result.core || state.app.core,
-          tun: result.tun || state.app.tun
+          tun: result.tun || state.app.tun,
+          system: result.system || state.app.system
         };
       } else {
         await refresh(false);
@@ -280,7 +301,8 @@
         available: false, running: false, pid: null, uptimeSeconds: 0,
         traffic: { upRate: 0, downRate: 0, upTotal: 0, downTotal: 0 }
       },
-      tun: null
+      tun: null,
+      system: { name: 'WebXray', version: '0.3.0', platform: '', arch: '', distribution: 'static', capabilities: {} }
     };
   }
 
@@ -292,6 +314,7 @@
     const profiles = filteredProfiles();
     const groupNames = groups();
     const selectedProfiles = appState.profiles.filter((profile) => state.selected.has(profile.id));
+    const activeProfile = appState.profiles.find((profile) => profile.id === appState.activeProfileId);
     const coreClass = core.running ? 'running' : core.available ? 'stopped' : 'unavailable';
     const connectionLabel = connected ? '已连接' : state.connection === 'connecting' ? '连接中' : '未连接';
     const disabled = connected ? '' : ' disabled';
@@ -299,13 +322,13 @@
       <div class="app-shell connection-${attr(state.connection)} ${state.busy ? 'is-busy' : ''}" aria-busy="${state.busy ? 'true' : 'false'}">
         ${state.busy ? '<div class="operation-progress" role="status" aria-label="操作进行中"></div>' : ''}
         <header class="topbar">
-          <div class="brand"><span class="brand-icon">◎</span><strong>WebXray</strong><span>XRAY CONTROL</span></div>
+          <div class="brand"><span class="brand-mark">WX</span><div><strong>WebXray</strong><span>Control</span></div></div>
           <nav class="menu-strip ${state.mobileMenu ? 'open' : ''}">
-            <button data-open="node"${disabled}>服务器</button>
-            <button data-open="subscriptions"${disabled}>订阅</button>
-            <button data-open="routing"${disabled}>路由</button>
-            <button data-open="settings"${disabled}>设置</button>
-            <button data-open="backup"${disabled}>备份</button>
+            <button class="active" data-action="nav-nodes"${disabled}>${icon('server')}<span>节点</span></button>
+            <button data-open="subscriptions"${disabled}>${icon('rss')}<span>订阅</span></button>
+            <button data-open="routing"${disabled}>${icon('route')}<span>路由</span></button>
+            <button data-open="settings"${disabled}>${icon('settings')}<span>设置</span></button>
+            <button data-open="backup"${disabled}>${icon('database')}<span>备份</span></button>
           </nav>
           <div class="top-actions">
             <button class="connection-button ${connected ? 'connected' : 'disconnected'}" data-open="connection" title="连接设置" aria-live="polite">
@@ -315,52 +338,60 @@
             <button class="icon-button mobile-only" data-action="mobile-menu" title="菜单">${icon('menu')}</button>
           </div>
         </header>
-        <div class="toolbar">
-          <div class="toolbar-group">
-            <button class="command-button primary add-server-button" data-open="node"${disabled}><span aria-hidden="true">+</span><span class="button-label">添加服务器</span></button>
-            <button class="icon-button" data-open="import" title="从分享链接导入"${disabled}>粘贴</button>
-            <button class="icon-button" data-open="subscriptions" title="订阅设置"${disabled}>订阅</button>
-            <button class="icon-button" data-action="subscriptions-update" title="更新全部订阅"${disabled}>刷新</button>
-          </div>
-          <span class="toolbar-separator"></span>
-          <div class="toolbar-group">
-            <button class="icon-button" data-action="test" title="测试 TCP 延迟"${disabled}>测速</button>
-            <button class="icon-button" data-open="routing" title="路由设置"${disabled}>路由</button>
-            <button class="icon-button" data-open="settings" title="参数设置"${disabled}>设置</button>
-            <button class="icon-button" data-action="config" title="查看实际配置"${disabled}>JSON</button>
-          </div>
-          <div class="toolbar-spacer"></div>
-          <div class="core-controls">
-            <span class="core-state ${coreClass}"><i></i>${core.running ? '运行中' : core.available ? '已停止' : '核心不可用'}</span>
-            ${core.running
-              ? `<button class="icon-button" data-action="core-stop" title="停止 Xray">${icon('stop')}</button>`
-              : `<button class="icon-button success" data-action="core-start" title="启动 Xray"${appState.activeProfileId && connected ? '' : ' disabled'}>${icon('play')}</button>`}
-            <button class="icon-button" data-action="core-restart" title="重启 Xray"${appState.activeProfileId && connected ? '' : ' disabled'}>${icon('restart')}</button>
-          </div>
-        </div>
         <div class="workspace">
-          ${sidebarView(appState, core, groupNames)}
+          ${sidebarView(appState, core, groupNames, current.system)}
           <main class="main-content">
-            <div class="list-header">
-              <div class="mobile-group-filter"><span>筛选</span><select id="mobile-group">${groupNames.map((name) => option(name, name, state.group)).join('')}</select></div>
-              <div class="search-box"><span>⌕</span><input id="search" value="${attr(state.search)}" placeholder="筛选服务器" /><kbd>${profiles.length}</kbd></div>
-              <div class="selection-actions">
-                <span>${state.selected.size ? `已选择 ${state.selected.size} 项` : '双击编辑，Enter 切换节点'}</span>
-                ${selectedProfiles.length === 1 ? `<button class="command-button" data-action="activate-selected">设为活动</button><button class="icon-button" data-action="copy-selected">复制</button><button class="icon-button" data-action="edit-selected">编辑</button>` : ''}
+            ${overviewView(appState, core, activeProfile, connected, coreClass)}
+            ${connected && appState.settings.allowLan && !appState.settings.inboundAuth?.enabled ? `<div class="exposure-notice">${icon('shieldAlert')}<span>代理端口已向局域网开放，当前没有访问认证</span><button data-open="settings">检查设置</button></div>` : ''}
+            <section class="node-workspace">
+              <div class="list-header">
+                <div class="list-title"><strong>节点</strong><span>${profiles.length} / ${appState.profiles.length}</span></div>
+                <div class="mobile-group-filter"><select id="mobile-group" aria-label="服务器分组">${groupNames.map((name) => option(name, name, state.group)).join('')}</select></div>
+                <div class="search-box">${icon('search')}<input id="search" value="${attr(state.search)}" placeholder="搜索名称、地址或协议" /><kbd>${profiles.length}</kbd></div>
+                <div class="selection-actions">
+                  ${selectedProfiles.length === 1 ? `<button class="command-button" data-action="activate-selected">${icon('zap')}设为活动</button><button class="icon-button" data-action="copy-selected" title="复制分享链接">${icon('copy')}</button><button class="icon-button" data-action="edit-selected" title="编辑节点">${icon('pencil')}</button>` : ''}
+                  <button class="icon-button" data-action="test" title="测试当前列表延迟"${disabled}>${icon('activity')}</button>
+                  <button class="icon-button" data-action="subscriptions-update" title="更新全部订阅"${disabled}>${icon('refresh')}</button>
+                  <button class="icon-button" data-open="import" title="从分享链接导入"${disabled}>${icon('clipboard')}</button>
+                  <button class="command-button primary add-server-button" data-open="node"${disabled}>${icon('plus')}<span>添加节点</span></button>
+                </div>
               </div>
-            </div>
             ${tableView(appState, profiles, connected)}
+            </section>
             ${bottomPanelView()}
           </main>
         </div>
-        ${statusbarView(appState, core, current.tun)}
+        ${statusbarView(appState, core, current.tun, current.system)}
         ${modalView()}
         ${toastView()}
       </div>
     `;
   }
 
-  function sidebarView(appState, core, groupNames) {
+  function overviewView(appState, core, activeProfile, connected, coreClass) {
+    const endpoint = `${appState.settings.allowLan ? '0.0.0.0' : '127.0.0.1'}:${appState.settings.mixedPort}`;
+    return `
+      <section class="overview-band">
+        <div class="core-overview">
+          <span class="core-emblem ${coreClass}">${icon(core.running ? 'activity' : 'server')}</span>
+          <div><span class="eyebrow">Xray Core</span><strong>${core.running ? '运行中' : core.available ? '已停止' : '核心不可用'}</strong><small>${escapeHtml(activeProfile?.name || (connected ? '尚未选择活动节点' : '等待连接后端'))}</small></div>
+        </div>
+        <div class="runtime-facts">
+          <div><span>代理入口</span><strong class="mono">${escapeHtml(endpoint)}</strong></div>
+          <div><span>实时流量</span><strong>↑ ${formatBytes(core.traffic?.upRate, true)} · ↓ ${formatBytes(core.traffic?.downRate, true)}</strong></div>
+          <div><span>运行时间</span><strong>${core.running ? formatDuration(core.uptimeSeconds) : '00:00'}</strong></div>
+        </div>
+        <div class="core-controls">
+          <button class="icon-button" data-action="config" title="查看实际配置"${appState.activeProfileId && connected ? '' : ' disabled'}>${icon('clipboard')}</button>
+          ${core.running
+            ? `<button class="command-button" data-action="core-stop">${icon('stop')}停止</button>`
+            : `<button class="command-button primary" data-action="core-start"${appState.activeProfileId && connected ? '' : ' disabled'}>${icon('play')}启动</button>`}
+          <button class="icon-button" data-action="core-restart" title="重启 Xray"${appState.activeProfileId && connected ? '' : ' disabled'}>${icon('restart')}</button>
+        </div>
+      </section>`;
+  }
+
+  function sidebarView(appState, core, groupNames, system) {
     return `
       <aside class="sidebar">
         <div class="sidebar-heading"><span>服务器分组</span><strong>${appState.profiles.length}</strong></div>
@@ -373,14 +404,15 @@
           `).join('')}
         </div>
         <div class="sidebar-subscriptions">
-          <div class="sidebar-heading"><span>订阅源</span><button class="icon-button" data-open="subscriptions">+</button></div>
+          <div class="sidebar-heading"><span>订阅源</span><button class="icon-button" data-open="subscriptions" title="管理订阅">${icon('plus')}</button></div>
           ${appState.subscriptions.map((subscription) => `
             <button data-group="${attr(subscription.name)}"><span>${escapeHtml(subscription.name)}</span><small>${subscription.nodeCount || 0}</small></button>
           `).join('')}
         </div>
         <div class="sidebar-core">
-          <div><span>核心</span><strong>${core.running ? 'ONLINE' : 'OFFLINE'}</strong></div>
+          <div><span class="status-led ${core.running ? 'online' : ''}"></span><span>${core.running ? '核心运行中' : '核心已停止'}</span></div>
           <p>${escapeHtml(core.version || core.lastError || '未检测到 Xray')}</p>
+          <small>${escapeHtml(distributionLabel(system))} · v${escapeHtml(system?.version || '0.3.0')}</small>
         </div>
       </aside>
     `;
@@ -389,21 +421,30 @@
   function tableView(appState, profiles, connected) {
     const allSelected = profiles.length > 0 && profiles.every((profile) => state.selected.has(profile.id));
     return `
-      <div class="table-wrap">
+      <div class="table-wrap desktop-profile-list">
         <table class="profile-table">
           <thead><tr>
             <th class="check-cell"><input type="checkbox" id="select-all"${checked(allSelected)} /></th>
-            <th>类型</th><th>别名</th><th>地址</th><th>端口</th><th>传输</th><th>TLS</th><th>分组</th><th class="numeric">延迟</th><th>操作</th>
+            <th>节点</th><th>服务器</th><th>传输与安全</th><th>分组</th><th class="numeric">延迟</th><th>操作</th>
           </tr></thead>
           <tbody>
             ${profiles.map((profile) => profileRow(appState, profile)).join('')}
             ${profiles.length ? '' : connected
-              ? `<tr><td colspan="10"><div class="empty-state"><div class="brand-icon">▣</div><h3>没有服务器</h3><p>添加节点、粘贴分享链接或更新订阅。</p><button class="command-button primary" data-open="node">+ 添加服务器</button></div></td></tr>`
-              : `<tr><td colspan="10"><div class="empty-state disconnected-empty">${icon('plug')}<h3>后端未连接</h3><p>${escapeHtml(state.connectionError || `正在连接 ${state.apiBase}`)}</p><button class="command-button primary" data-open="connection">连接设置</button></div></td></tr>`}
+              ? `<tr><td colspan="7">${emptyStateView(true)}</td></tr>`
+              : `<tr><td colspan="7">${emptyStateView(false)}</td></tr>`}
           </tbody>
         </table>
       </div>
+      <div class="mobile-profile-list">
+        ${profiles.map((profile) => mobileProfileRow(appState, profile)).join('') || emptyStateView(connected)}
+      </div>
     `;
+  }
+
+  function emptyStateView(connected) {
+    return connected
+      ? `<div class="empty-state">${icon('server')}<h3>还没有节点</h3><p>从订阅、分享链接或手动配置开始</p><button class="command-button primary" data-open="node">${icon('plus')}添加节点</button></div>`
+      : `<div class="empty-state disconnected-empty">${icon('plug')}<h3>后端未连接</h3><p>${escapeHtml(state.connectionError || `正在连接 ${state.apiBase}`)}</p><button class="command-button primary" data-open="connection">连接设置</button></div>`;
   }
 
   function profileRow(appState, profile) {
@@ -413,22 +454,37 @@
     return `
       <tr class="${active ? 'active-profile' : ''} ${selected ? 'selected' : ''}" data-profile-row="${attr(profile.id)}" tabindex="0">
         <td class="check-cell"><input type="checkbox" data-select="${attr(profile.id)}"${checked(selected)} /></td>
-        <td><span class="protocol protocol-${attr(profile.type)}">${escapeHtml(TYPE_LABELS[profile.type] || profile.type)}</span></td>
-        <td class="name-cell">${active ? '<span class="active-flag">活动</span>' : ''}<strong>${escapeHtml(profile.name)}</strong></td>
-        <td class="mono">${escapeHtml(profile.type === 'custom' ? '完整配置' : profile.server)}</td>
-        <td class="numeric">${profile.type === 'custom' ? '-' : escapeHtml(profile.port)}</td>
-        <td>${profile.type === 'custom' ? '-' : escapeHtml((profile.transport || '').toUpperCase())}</td>
-        <td>${profile.type === 'custom' ? '-' : `<span class="${profile.security !== 'none' ? 'security-on' : 'muted'}">${escapeHtml((profile.security || 'none').toUpperCase())}</span>`}</td>
+        <td class="name-cell"><div><strong>${escapeHtml(profile.name)}</strong><span class="protocol protocol-${attr(profile.type)}">${escapeHtml(TYPE_LABELS[profile.type] || profile.type)}</span>${active ? '<span class="active-flag">当前</span>' : ''}</div></td>
+        <td class="endpoint-cell"><strong class="mono">${escapeHtml(profile.type === 'custom' ? '完整配置' : profile.server)}</strong><small>${profile.type === 'custom' ? 'JSON' : `:${escapeHtml(profile.port)}`}</small></td>
+        <td class="transport-cell">${profile.type === 'custom' ? '自定义' : `<strong>${escapeHtml((profile.transport || 'raw').toUpperCase())}</strong><small class="${profile.security !== 'none' ? 'security-on' : 'muted'}">${escapeHtml((profile.security || 'none').toUpperCase())}</small>`}</td>
         <td>${escapeHtml(profile.group)}</td>
         <td class="numeric delay ${profile.stats?.delayMs && profile.stats.delayMs < 200 ? 'good' : profile.stats?.delayMs ? 'slow' : ''}">${escapeHtml(delay)}</td>
         <td><div class="row-actions">
-          <button class="icon-button ${active ? 'active' : ''}" data-activate="${attr(profile.id)}" title="设为活动节点">电</button>
-          <button class="icon-button" data-edit="${attr(profile.id)}" title="编辑">改</button>
-          <button class="icon-button" data-copy="${attr(profile.id)}" title="复制分享链接"${profile.type === 'custom' ? ' disabled' : ''}>链</button>
-          <button class="icon-button danger" data-delete="${attr(profile.id)}" title="删除">删</button>
+          <button class="icon-button ${active ? 'active' : ''}" data-activate="${attr(profile.id)}" title="设为活动节点">${icon('zap')}</button>
+          <button class="icon-button" data-edit="${attr(profile.id)}" title="编辑节点">${icon('pencil')}</button>
+          <button class="icon-button" data-copy="${attr(profile.id)}" title="复制分享链接"${profile.type === 'custom' ? ' disabled' : ''}>${icon('copy')}</button>
+          <button class="icon-button danger" data-delete="${attr(profile.id)}" title="删除节点">${icon('trash')}</button>
         </div></td>
       </tr>
     `;
+  }
+
+  function mobileProfileRow(appState, profile) {
+    const active = appState.activeProfileId === profile.id;
+    const delay = profile.stats?.delayMs ? `${profile.stats.delayMs} ms` : profile.stats?.error ? '失败' : '未测试';
+    return `
+      <article class="profile-card ${active ? 'active-profile' : ''}" data-profile-row="${attr(profile.id)}" tabindex="0">
+        <div class="profile-card-main">
+          <div class="profile-card-title"><strong>${escapeHtml(profile.name)}</strong>${active ? '<span class="active-flag">当前</span>' : ''}</div>
+          <div class="profile-card-meta"><span class="protocol protocol-${attr(profile.type)}">${escapeHtml(TYPE_LABELS[profile.type] || profile.type)}</span><span class="mono">${escapeHtml(profile.type === 'custom' ? '完整配置' : `${profile.server}:${profile.port}`)}</span></div>
+          <small>${escapeHtml(profile.group)} · ${escapeHtml(profile.type === 'custom' ? 'JSON' : `${(profile.transport || 'raw').toUpperCase()} / ${(profile.security || 'none').toUpperCase()}`)} · ${escapeHtml(delay)}</small>
+        </div>
+        <div class="row-actions">
+          <button class="icon-button ${active ? 'active' : ''}" data-activate="${attr(profile.id)}" title="设为活动节点">${icon('zap')}</button>
+          <button class="icon-button" data-edit="${attr(profile.id)}" title="编辑节点">${icon('pencil')}</button>
+          <button class="icon-button danger" data-delete="${attr(profile.id)}" title="删除节点">${icon('trash')}</button>
+        </div>
+      </article>`;
   }
 
   function bottomPanelView() {
@@ -438,8 +494,8 @@
           <button class="${state.bottomTab === 'logs' ? 'active' : ''}" data-bottom="logs">运行日志</button>
           <button class="${state.bottomTab === 'config' ? 'active' : ''}" data-bottom="config">实际配置</button>
           <div></div>
-          ${state.bottomTab === 'logs' ? '<button class="icon-button" data-action="clear-logs">清空</button>' : ''}
-          <button class="icon-button" data-action="bottom-toggle">${state.bottomOpen ? '收起' : '展开'}</button>
+          ${state.bottomTab === 'logs' ? '<button class="text-button" data-action="clear-logs">清空</button>' : ''}
+          <button class="icon-button" data-action="bottom-toggle" title="${state.bottomOpen ? '收起面板' : '展开面板'}">${icon(state.bottomOpen ? 'chevronDown' : 'chevronUp')}</button>
         </div>
         ${state.bottomOpen && state.bottomTab === 'logs' ? `<div class="log-view">${state.logs.length ? state.logs.map(logLine).join('') : '<div class="log-empty">暂无运行日志</div>'}</div>` : ''}
         ${state.bottomOpen && state.bottomTab === 'config' ? `<pre class="config-view">${state.generatedConfig ? escapeHtml(JSON.stringify(state.generatedConfig, null, 2)) : '选择活动节点后查看生成配置。'}</pre>` : ''}
@@ -451,17 +507,18 @@
     return `<div class="log-line log-${attr(log.level)}"><time>${new Date(log.at).toLocaleTimeString()}</time><span>${escapeHtml(log.level)}</span><pre>${escapeHtml(log.message)}</pre></div>`;
   }
 
-  function statusbarView(appState, core, tun) {
+  function distributionLabel(system) {
+    return ({ docker: 'Docker', deb: 'Deb / Linux', 'windows-portable': 'Windows 直接运行', 'windows-service': 'Windows 服务', source: '开发环境', static: '独立前端' })[system?.distribution] || system?.distribution || 'WebXray';
+  }
+
+  function statusbarView(appState, core, tun, system) {
     return `
       <footer class="statusbar">
-        <span><span class="status-led ${core.running ? 'online' : ''}"></span>${core.running ? `Xray · PID ${core.pid}` : 'Xray 已停止'}</span>
-        <span class="desktop-status"><span class="status-led ${tun?.ready ? 'online' : ''}"></span>TUN ${tun?.ready ? '就绪' : '未就绪'}</span>
-        <span>↑ ${formatBytes(core.traffic?.upRate, true)}</span>
-        <span>↓ ${formatBytes(core.traffic?.downRate, true)}</span>
-        <span class="desktop-status">累计上传 ${formatBytes(core.traffic?.upTotal)} · 下载 ${formatBytes(core.traffic?.downTotal)}</span>
+        <span><span class="status-led ${state.connection === 'connected' ? 'online' : ''}"></span>后端${state.connection === 'connected' ? '正常' : '未连接'}</span>
+        <span class="desktop-status">${escapeHtml(distributionLabel(system))} · ${escapeHtml(system?.platform || '')}/${escapeHtml(system?.arch || '')}</span>
+        <span class="desktop-status">TUN ${tun?.ready ? '就绪' : system?.capabilities?.tun ? '未就绪' : '不支持'}</span>
         <span class="status-spacer"></span>
-        <span>${appState.settings.allowLan ? '0.0.0.0' : '127.0.0.1'}:${appState.settings.mixedPort}</span>
-        <span>${core.running ? formatDuration(core.uptimeSeconds) : '00:00'}</span>
+        <span>v${escapeHtml(system?.version || '0.3.0')}</span>
       </footer>
     `;
   }
@@ -483,7 +540,7 @@
     return `
       <div class="modal-backdrop">
         <section class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-          <header class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${escapeHtml(subtitle || '')}</p></div><button class="icon-button" data-action="modal-close">关闭</button></header>
+          <header class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2>${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ''}</div><button class="icon-button" data-action="modal-close" title="关闭">${icon('x')}</button></header>
           <div class="modal-body">${body}</div>
           <footer class="modal-footer">${footer}</footer>
         </section>
@@ -497,6 +554,10 @@
 
   function wideField(name, label, value = '', attrs = '') {
     return `<label class="field field-wide"><span>${escapeHtml(label)}</span><input name="${attr(name)}" value="${attr(value)}" ${attrs} /></label>`;
+  }
+
+  function nodeField(group, name, label, value = '', attrs = '') {
+    return `<label class="field" data-node-field="${attr(group)}"><span>${escapeHtml(label)}</span><input name="${attr(name)}" value="${attr(value)}" ${attrs} /></label>`;
   }
 
   function tunReadinessView(tun) {
@@ -556,33 +617,33 @@
         <input type="hidden" name="id" value="${attr(p.id || '')}" />
         <label class="field"><span>协议</span><select name="type">${PROFILE_TYPES.map((type) => option(type, TYPE_LABELS[type], p.type)).join('')}</select></label>
         ${field('name', '别名', p.name)}
-        ${field('server', '地址', p.server)}
-        ${field('port', '端口', p.port, 'type="number" min="1" max="65535"')}
-        ${field('uuid', 'UUID', p.uuid)}
-        ${field('password', '密码', p.password, 'type="password"')}
-        ${field('username', '用户名', p.username)}
-        ${field('method', '加密方法', p.method)}
-        ${field('encryption', 'Encryption', p.encryption)}
-        ${field('alterId', 'AlterId', p.alterId, 'type="number" min="0"')}
         ${field('group', '分组', p.group)}
-        <div class="section-title">传输与安全</div>
-        <label class="field"><span>传输</span><select name="transport">${TRANSPORTS.map((item) => option(item, item.toUpperCase(), p.transport)).join('')}</select></label>
-        <label class="field"><span>TLS</span><select name="security">${SECURITIES.map((item) => option(item, item.toUpperCase(), p.security)).join('')}</select></label>
-        ${field('flow', 'Flow', p.flow)}
-        ${field('sni', 'SNI', p.sni)}
-        ${field('host', 'Host', p.host)}
-        ${field('path', 'Path', p.path)}
-        ${field('serviceName', 'Service Name', p.serviceName)}
-        ${field('alpn', 'ALPN', Array.isArray(p.alpn) ? p.alpn.join(',') : p.alpn)}
-        ${field('fingerprint', 'Fingerprint', p.fingerprint)}
-        ${field('publicKey', 'REALITY 公钥', p.publicKey)}
-        ${field('shortId', 'Short ID', p.shortId)}
-        ${field('spiderX', 'SpiderX', p.spiderX)}
-        <label class="toggle-row field-wide"><input type="checkbox" name="allowInsecure"${checked(p.allowInsecure)} />允许不安全证书</label>
-        <label class="field field-wide"><span>完整 Xray JSON</span><textarea class="code-input" name="customConfigText">${escapeHtml(customText)}</textarea></label>
+        ${nodeField('standard', 'server', '服务器地址', p.server)}
+        ${nodeField('standard', 'port', '端口', p.port, 'type="number" min="1" max="65535"')}
+        ${nodeField('uuid', 'uuid', 'UUID', p.uuid)}
+        ${nodeField('password', 'password', '密码', p.password, 'type="password"')}
+        ${nodeField('userpass', 'username', '用户名', p.username)}
+        ${nodeField('shadowsocks', 'method', '加密方法', p.method)}
+        ${nodeField('uuid', 'encryption', '加密方式', p.encryption)}
+        ${nodeField('vmess', 'alterId', 'Alter ID', p.alterId, 'type="number" min="0"')}
+        <div class="section-title" data-node-field="stream">传输与安全</div>
+        <label class="field" data-node-field="stream"><span>传输协议</span><select name="transport">${TRANSPORTS.map((item) => option(item, item.toUpperCase(), p.transport)).join('')}</select></label>
+        <label class="field" data-node-field="security"><span>安全协议</span><select name="security">${SECURITIES.map((item) => option(item, item.toUpperCase(), p.security)).join('')}</select></label>
+        ${nodeField('flow', 'flow', 'Flow', p.flow)}
+        ${nodeField('secure', 'sni', 'SNI / Server Name', p.sni)}
+        ${nodeField('host', 'host', 'Host', p.host)}
+        ${nodeField('path', 'path', 'Path', p.path)}
+        ${nodeField('grpc', 'serviceName', 'Service Name', p.serviceName)}
+        ${nodeField('tls', 'alpn', 'ALPN', Array.isArray(p.alpn) ? p.alpn.join(',') : p.alpn)}
+        ${nodeField('secure', 'fingerprint', '浏览器指纹', p.fingerprint)}
+        ${nodeField('reality', 'publicKey', 'REALITY 公钥', p.publicKey)}
+        ${nodeField('reality', 'shortId', 'Short ID', p.shortId)}
+        ${nodeField('reality', 'spiderX', 'SpiderX', p.spiderX)}
+        <label class="toggle-row field-wide" data-node-field="tls"><input type="checkbox" name="allowInsecure"${checked(p.allowInsecure)} />允许不安全证书</label>
+        <label class="field field-wide" data-node-field="custom"><span>完整 Xray JSON</span><textarea class="code-input" name="customConfigText">${escapeHtml(customText)}</textarea></label>
       </form>
     `;
-    return modalShell(profile ? '编辑服务器' : '添加服务器', '字段会转换为 Xray 客户端出站配置', body, '<button class="button" data-action="modal-close">取消</button><button class="command-button primary" form="node-form">保存</button>', true);
+    return modalShell(profile ? '编辑节点' : '添加节点', '', body, '<button class="button" data-action="modal-close">取消</button><button class="command-button primary" form="node-form">保存节点</button>', true);
   }
 
   function importModal() {
@@ -625,15 +686,16 @@
           <p>${escapeHtml(subscription.url)}</p>
           <small class="${subscription.lastError ? 'error' : ''}">${escapeHtml(subscription.lastError || `${subscription.nodeCount || 0} 个节点`)}</small>
         </div>
-        <button class="icon-button" data-sub-update="${attr(subscription.id)}">更新</button>
-        <button class="icon-button" data-sub-edit="${attr(subscription.id)}">编辑</button>
-        <button class="icon-button danger" data-sub-delete="${attr(subscription.id)}">删除</button>
+        <button class="icon-button" data-sub-update="${attr(subscription.id)}" title="更新订阅">${icon('refresh')}</button>
+        <button class="icon-button" data-sub-edit="${attr(subscription.id)}" title="编辑订阅">${icon('pencil')}</button>
+        <button class="icon-button danger" data-sub-delete="${attr(subscription.id)}" title="删除订阅">${icon('trash')}</button>
       </div>
     `;
   }
 
   function settingsModal() {
     const s = state.app.state.settings;
+    const tunSupported = state.app.system?.capabilities?.tun !== false;
     const body = `
       <form id="settings-form" class="form-grid">
         ${field('mixedPort', 'Mixed 端口', s.mixedPort, 'type="number" min="1" max="65535"')}
@@ -651,9 +713,9 @@
         <label class="toggle-row"><input type="checkbox" name="inboundAuthEnabled"${checked(s.inboundAuth?.enabled)} />启用认证</label>
         ${field('inboundAuthUsername', '用户名', s.inboundAuth?.username || '')}
         ${field('inboundAuthPassword', '密码', s.inboundAuth?.password || '', 'type="password"')}
-        <div class="section-title">TUN 模式</div>
+        <div class="section-title">Linux TUN</div>
         ${tunReadinessView(state.app.tun)}
-        <label class="toggle-row"><input type="checkbox" name="tunEnabled"${checked(s.tunEnabled)} />启用 Xray TUN 入站</label>
+        <label class="toggle-row"><input type="checkbox" name="tunEnabled"${checked(s.tunEnabled)}${tunSupported ? '' : ' disabled'} />${tunSupported ? '启用 Xray TUN 入站' : '当前平台不支持 TUN'}</label>
         <label class="toggle-row"><input type="checkbox" name="tunAutoRoute"${checked(s.tunAutoRoute)} />自动写入系统 CIDR 路由</label>
         <label class="toggle-row"><input type="checkbox" name="tunIpv6"${checked(s.tunIpv6)} />接管 IPv6 路由</label>
         ${field('tunName', '接口名称', s.tunName || 'xray_tun')}
@@ -675,7 +737,7 @@
             ${['proxy', 'bypass-cn', 'direct'].map((mode) => `<button type="button" class="${routing.mode === mode ? 'active' : ''}" data-route-mode="${mode}">${mode === 'proxy' ? '全局代理' : mode === 'bypass-cn' ? '绕过大陆' : '全局直连'}</button>`).join('')}
           </div>
           <label class="toggle-row"><input type="checkbox" name="blockAds"${checked(routing.blockAds)} />阻止广告域名</label>
-          <button type="button" class="command-button" data-action="rule-add">添加规则</button>
+        <button type="button" class="command-button" data-action="rule-add">${icon('plus')}添加规则</button>
         </div>
         <input type="hidden" name="mode" value="${attr(routing.mode)}" />
         <div class="rule-list" id="rule-list">
@@ -707,7 +769,7 @@
           ['tcp,udp', 'TCP + UDP']
         ].map(([value, label]) => option(value, label, rule.network || '')).join('')}</select>
         <select name="ruleOutbound">${['proxy', 'direct', 'block'].map((item) => option(item, item === 'proxy' ? '代理' : item === 'direct' ? '直连' : '阻止', rule.outboundTag || 'proxy')).join('')}</select>
-        <button type="button" class="icon-button danger" data-rule-delete="${index}">删</button>
+        <button type="button" class="icon-button danger" data-rule-delete="${index}" title="删除规则">${icon('trash')}</button>
       </div>
     `;
   }
@@ -715,8 +777,8 @@
   function backupModal() {
     const body = `
       <div class="backup-actions">
-        <button class="backup-action" data-action="backup-download"><span><strong>导出备份</strong><small>下载完整 JSON 数据文件</small></span></button>
-        <button class="backup-action" data-action="backup-pick"><span><strong>恢复备份</strong><small>导入后停止核心，由你确认再启动</small></span></button>
+        <button class="backup-action" data-action="backup-download">${icon('download')}<span><strong>导出备份</strong><small>下载完整 JSON 数据文件</small></span></button>
+        <button class="backup-action" data-action="backup-pick">${icon('upload')}<span><strong>恢复备份</strong><small>导入后停止核心，由你确认再启动</small></span></button>
         <input id="backup-file" type="file" accept="application/json,.json" hidden />
       </div>
     `;
@@ -746,6 +808,39 @@
       render();
     });
     document.getElementById('backup-file')?.addEventListener('change', importBackup);
+    const nodeForm = document.getElementById('node-form');
+    if (nodeForm) {
+      updateNodeFields(nodeForm);
+      nodeForm.addEventListener('change', (event) => {
+        if (['type', 'transport', 'security'].includes(event.target.name)) updateNodeFields(nodeForm);
+      });
+    }
+  }
+
+  function updateNodeFields(form) {
+    const type = form.elements.type.value;
+    const transport = form.elements.transport.value;
+    const security = form.elements.security.value;
+    const stream = ['vless', 'vmess', 'trojan'].includes(type);
+    const visible = new Set(['always']);
+    if (type === 'custom') visible.add('custom');
+    else visible.add('standard');
+    if (['vless', 'vmess'].includes(type)) visible.add('uuid');
+    if (['trojan', 'shadowsocks', 'socks', 'http'].includes(type)) visible.add('password');
+    if (['socks', 'http'].includes(type)) visible.add('userpass');
+    visible.add(type);
+    if (['vless', 'trojan'].includes(type)) visible.add('flow');
+    if (stream) visible.add('stream');
+    if (stream || type === 'http') visible.add('security');
+    if (security !== 'none' && (stream || type === 'http')) visible.add('secure');
+    if (security === 'tls') visible.add('tls');
+    if (security === 'reality') visible.add('reality');
+    if (stream && ['ws', 'httpupgrade', 'xhttp', 'h2'].includes(transport)) visible.add('host');
+    if (stream && ['ws', 'httpupgrade', 'xhttp', 'h2', 'kcp'].includes(transport)) visible.add('path');
+    if (stream && transport === 'grpc') visible.add('grpc');
+    for (const field of form.querySelectorAll('[data-node-field]')) {
+      field.hidden = !field.dataset.nodeField.split(/\s+/).some((group) => visible.has(group));
+    }
   }
 
   document.addEventListener('click', async (event) => {
@@ -830,6 +925,10 @@
     if (!action) return;
     if (action === 'modal-close') {
       state.modal = null;
+      render();
+    } else if (action === 'nav-nodes') {
+      state.modal = null;
+      state.mobileMenu = false;
       render();
     } else if (action === 'theme') {
       state.theme = state.theme === 'light' ? 'dark' : 'light';

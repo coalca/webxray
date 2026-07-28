@@ -18,6 +18,8 @@ RUN mkdir -p /data /app/data \
     && chmod 755 /opt/webxray-defaults/xray/xray
 
 ENV NODE_ENV=production \
+    WEBXRAY_DISTRIBUTION=docker \
+    WEBXRAY_DEFAULT_ALLOW_LAN=true \
     WEBXRAY_HOST=0.0.0.0 \
     WEBXRAY_DATA_DIR=/data \
     WEBXRAY_FRONTEND_DIR=/app/frontend \

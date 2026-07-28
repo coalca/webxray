@@ -8,7 +8,8 @@
   <startmode>Automatic</startmode>
   <stoptimeout>15 sec</stoptimeout>
   <env name="NODE_ENV" value="production" />
-  <env name="WEBXRAY_HOST" value="0.0.0.0" />
+  <env name="WEBXRAY_HOST" value="127.0.0.1" />
+  <env name="WEBXRAY_DISTRIBUTION" value="windows-service" />
   <env name="WEBXRAY_DATA_DIR" value="%BASE%\data" />
   <env name="WEBXRAY_FRONTEND_DIR" value="%BASE%\app\frontend" />
   <env name="WEBXRAY_BUNDLED_XRAY_DIR" value="%BASE%\defaults\xray" />

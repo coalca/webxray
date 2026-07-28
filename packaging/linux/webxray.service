@@ -8,8 +8,9 @@ Type=simple
 User=webxray
 Group=webxray
 WorkingDirectory=/usr/lib/webxray
-ExecStart=/usr/bin/node /usr/lib/webxray/server/launcher.mjs
+ExecStart=/usr/lib/webxray/runtime/node /usr/lib/webxray/server/launcher.mjs
 Environment=NODE_ENV=production
+Environment=WEBXRAY_DISTRIBUTION=deb
 Environment=WEBXRAY_HOST=0.0.0.0
 Environment=WEBXRAY_DATA_DIR=/var/lib/webxray
 Environment=WEBXRAY_FRONTEND_DIR=/usr/share/webxray/frontend

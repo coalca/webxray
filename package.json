@@ -1,6 +1,6 @@
 {
   "name": "webxray",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,8 +8,9 @@
     "dev:api": "node --watch backend/server/launcher.mjs",
     "dev:frontend": "node tools/serve-static.mjs frontend 5173",
     "build:ui": "node --check frontend/app.js",
-    "test": "node --test backend/test/*.mjs",
-    "test:e2e": "playwright test"
+    "test": "node --test backend/test/*.mjs test/frontend/*.mjs test/packaging/*.mjs",
+    "test:e2e": "playwright test",
+    "check": "npm test && npm run build:ui && sh -n packaging/build-deb.sh && sh -n packaging/build-windows.sh && sh -n packaging/linux/webxray"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.0"

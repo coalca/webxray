@@ -3,4 +3,5 @@ Keep this directory when updating the program.
 
 Use WebXray-Run.cmd for direct foreground mode.
 Use WebXray-Install-Service.cmd as Administrator for automatic service mode.
+Use WebXray-Uninstall-Service.cmd as Administrator to remove that service.
 Do not run both modes at the same time.

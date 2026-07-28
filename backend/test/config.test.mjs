@@ -24,10 +24,16 @@ test('generates a VLESS REALITY client config with mixed inbound and metrics', (
   state.activeProfileId = profile.id;
   const config = generateXrayConfig(state);
   assert.equal(config.inbounds[0].protocol, 'mixed');
+  assert.equal(config.inbounds[0].listen, '127.0.0.1');
   assert.equal(config.outbounds[0].protocol, 'vless');
   assert.equal(config.outbounds[0].streamSettings.realitySettings.publicKey, 'test-public-key');
   assert.equal(config.metrics.listen, '127.0.0.1:11111');
   assert.ok(config.routing.rules.some((rule) => rule.outboundTag === 'direct'));
+});
+
+test('only Docker-like deployments opt into a LAN-visible default inbound', () => {
+  assert.equal(createDefaultState().settings.allowLan, false);
+  assert.equal(createDefaultState({ WEBXRAY_DEFAULT_ALLOW_LAN: 'true' }).settings.allowLan, true);
 });
 
 test('returns custom Xray JSON without mutation', () => {
