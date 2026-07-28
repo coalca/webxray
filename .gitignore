@@ -15,4 +15,6 @@ wrangler.jsonc
 frontend/_headers
 frontend/_redirects
 coverage/
+playwright-report/
+test-results/
 npm-debug.log*

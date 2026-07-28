@@ -39,6 +39,7 @@
     generatedConfig: null,
     theme: localStorage.getItem(STORAGE.theme) || 'light',
     mobileMenu: false,
+    subscriptionError: '',
     toasts: []
   };
 
@@ -153,6 +154,11 @@
     } else if (!state.busy) {
       progress?.remove();
     }
+    for (const button of shell.querySelectorAll('[data-busy-key]')) {
+      const busy = state.busy === button.dataset.busyKey;
+      button.disabled = busy;
+      button.textContent = busy ? button.dataset.busyLabel : button.dataset.idleLabel;
+    }
   }
 
   function formatBytes(value, speed = false) {
@@ -242,7 +248,7 @@
           tun: result.tun || state.app.tun
         };
       } else {
-        await refresh();
+        await refresh(false);
       }
       completed = true;
       if (successMessage) notify(successMessage);
@@ -600,7 +606,8 @@
           <label class="field"><span>URL</span><input name="url" placeholder="https://example.com/sub" required /></label>
           <label class="field"><span>User-Agent</span><input name="userAgent" /></label>
           <label class="toggle-row"><input type="checkbox" name="enabled" checked />启用</label>
-          <button class="command-button primary">保存订阅</button>
+          ${state.subscriptionError ? `<div class="form-error" role="alert">${escapeHtml(state.subscriptionError)}</div>` : ''}
+          <button type="submit" class="command-button primary" data-busy-key="subscription-save" data-idle-label="保存订阅" data-busy-label="保存中...">保存订阅</button>
         </form>
         <div class="subscription-list">
           ${subscriptions.length ? subscriptions.map(subscriptionView).join('') : '<div class="empty-state compact"><p>没有订阅源</p></div>'}
@@ -616,7 +623,7 @@
         <div class="subscription-main">
           <strong>${escapeHtml(subscription.name)}</strong>
           <p>${escapeHtml(subscription.url)}</p>
-          <small>${escapeHtml(subscription.lastError || `${subscription.nodeCount || 0} 个节点`)}</small>
+          <small class="${subscription.lastError ? 'error' : ''}">${escapeHtml(subscription.lastError || `${subscription.nodeCount || 0} 个节点`)}</small>
         </div>
         <button class="icon-button" data-sub-update="${attr(subscription.id)}">更新</button>
         <button class="icon-button" data-sub-edit="${attr(subscription.id)}">编辑</button>
@@ -754,6 +761,7 @@
       return;
     }
     if (target.dataset.open) {
+      if (target.dataset.open === 'subscriptions') state.subscriptionError = '';
       state.modal = { type: target.dataset.open };
       state.mobileMenu = false;
       render();
@@ -807,14 +815,15 @@
 
   document.addEventListener('submit', async (event) => {
     const form = event.target;
-    if (!form.id) return;
+    const formId = form.getAttribute?.('id');
+    if (!formId) return;
     event.preventDefault();
-    if (form.id === 'connection-form') return saveConnectionForm(form);
-    if (form.id === 'node-form') return saveNode(form);
-    if (form.id === 'import-form') return importProfiles(form);
-    if (form.id === 'subscription-form') return saveSubscription(form);
-    if (form.id === 'settings-form') return saveSettings(form);
-    if (form.id === 'routing-form') return saveRouting(form);
+    if (formId === 'connection-form') return saveConnectionForm(form);
+    if (formId === 'node-form') return saveNode(form);
+    if (formId === 'import-form') return importProfiles(form);
+    if (formId === 'subscription-form') return saveSubscription(form);
+    if (formId === 'settings-form') return saveSettings(form);
+    if (formId === 'routing-form') return saveRouting(form);
   });
 
   async function handleAction(action) {
@@ -1035,6 +1044,7 @@
   }
 
   async function saveSubscription(form) {
+    state.subscriptionError = '';
     const data = new FormData(form);
     const id = data.get('id');
     const body = {
@@ -1049,12 +1059,17 @@
     if (result) {
       state.modal = { type: 'subscriptions' };
       render();
+    } else {
+      const latestError = state.toasts.at(-1);
+      state.subscriptionError = latestError?.type === 'error' ? latestError.message : '订阅保存失败';
+      render();
     }
   }
 
   function editSubscription(id) {
     const subscription = state.app.state.subscriptions.find((item) => item.id === id);
     if (!subscription) return;
+    state.subscriptionError = '';
     state.modal = { type: 'subscriptions' };
     render();
     const form = document.getElementById('subscription-form');
@@ -1068,7 +1083,13 @@
 
   async function updateSubscription(id) {
     const result = await perform(`sub-update-${id}`, () => request(`/api/subscriptions/${encodeURIComponent(id)}/update`, { method: 'POST', timeout: 45_000 }), '订阅更新完成');
-    if (result) state.modal = { type: 'subscriptions' };
+    if (!result) {
+      try { await refresh(false); } catch {}
+    }
+    if (state.app) {
+      state.modal = { type: 'subscriptions' };
+      render();
+    }
   }
 
   async function deleteSubscription(id) {

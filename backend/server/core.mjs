@@ -76,6 +76,14 @@ export function xrayValidationFailed(code, output) {
   return code !== 0 || /(?:^|\n)Failed to start:/i.test(String(output || ''));
 }
 
+export function xrayRuntimeFailure(output) {
+  return String(output || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .findLast((line) => /Failed to start:/i.test(line)) || '';
+}
+
 export class CoreController extends EventEmitter {
   constructor({
     store,
@@ -271,15 +279,21 @@ export class CoreController extends EventEmitter {
     });
     this.child = child;
     this.startedAt = now();
-    child.stdout.on('data', (chunk) => this.addLog('stdout', chunk.toString()));
-    child.stderr.on('data', (chunk) => this.addLog('stderr', chunk.toString()));
+    let runtimeFailure = '';
+    const capture = (level, chunk) => {
+      const text = chunk.toString();
+      runtimeFailure = xrayRuntimeFailure(text) || runtimeFailure;
+      this.addLog(level, text);
+    };
+    child.stdout.on('data', (chunk) => capture('stdout', chunk));
+    child.stderr.on('data', (chunk) => capture('stderr', chunk));
     child.once('error', (error) => {
       this.lastError = error.message;
       this.addLog('error', `Xray 启动失败：${error.message}`);
     });
     child.once('exit', (code, signal) => {
       this.lastExit = { code, signal, at: now() };
-      if (this.desiredRunning && code !== 0) this.lastError = `Xray 意外退出：${code ?? signal ?? 'unknown'}`;
+      if (this.desiredRunning && code !== 0) this.lastError = runtimeFailure || `Xray 意外退出：${code ?? signal ?? 'unknown'}`;
       this.addLog(code === 0 || !this.desiredRunning ? 'system' : 'error', `Xray 已退出（code=${code ?? '-'}, signal=${signal || '-'}）`);
       if (this.child === child) this.child = null;
       this.startedAt = null;
@@ -339,15 +353,21 @@ export class CoreController extends EventEmitter {
     });
     this.child = child;
     this.startedAt = now();
-    child.stdout.on('data', (chunk) => this.addLog('stdout', chunk.toString()));
-    child.stderr.on('data', (chunk) => this.addLog('stderr', chunk.toString()));
+    let runtimeFailure = '';
+    const capture = (level, chunk) => {
+      const text = chunk.toString();
+      runtimeFailure = xrayRuntimeFailure(text) || runtimeFailure;
+      this.addLog(level, text);
+    };
+    child.stdout.on('data', (chunk) => capture('stdout', chunk));
+    child.stderr.on('data', (chunk) => capture('stderr', chunk));
     child.once('error', (error) => {
       this.lastError = error.message;
       this.addLog('error', `Xray 启动失败：${error.message}`);
     });
     child.once('exit', (code, signal) => {
       this.lastExit = { code, signal, at: now() };
-      if (this.desiredRunning && code !== 0) this.lastError = `Xray 意外退出：${code ?? signal ?? 'unknown'}`;
+      if (this.desiredRunning && code !== 0) this.lastError = runtimeFailure || `Xray 意外退出：${code ?? signal ?? 'unknown'}`;
       this.addLog(code === 0 || !this.desiredRunning ? 'system' : 'error', `Xray 已退出（code=${code ?? '-'}, signal=${signal || '-'}）`);
       if (this.child === child) this.child = null;
       this.startedAt = null;

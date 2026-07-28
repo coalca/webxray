@@ -103,6 +103,7 @@ silently overwritten.
 ### Phase 5: acceptance and release
 
 - [x] Run all unit and syntax tests.
+- [x] Run persistent Chromium workflow tests for forms and mobile layout.
 - [x] Build and start the real Docker image with a clean bind mount.
 - [x] Verify the unauthenticated and authenticated UI at desktop and mobile
   widths.

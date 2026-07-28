@@ -1,6 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CoreController } from '../server/core.mjs';
+import { CoreController, xrayRuntimeFailure } from '../server/core.mjs';
+
+test('extracts an actionable Xray startup failure', () => {
+  const output = [
+    'Xray 26.7.11',
+    'Failed to start: app/proxyman/inbound: failed to listen TCP on 10808: address already in use'
+  ].join('\n');
+  assert.equal(
+    xrayRuntimeFailure(output),
+    'Failed to start: app/proxyman/inbound: failed to listen TCP on 10808: address already in use'
+  );
+  assert.equal(xrayRuntimeFailure('Configuration OK.'), '');
+});
 
 test('serializes core lifecycle operations', async () => {
   const controller = new CoreController({ store: null, dataDir: '/tmp' });

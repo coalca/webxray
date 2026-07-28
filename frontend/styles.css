@@ -10,8 +10,9 @@
   --border-strong: #bcc5ce;
   --text: #20252c;
   --muted: #68727d;
-  --primary: #d93f3f;
-  --primary-hover: #be3030;
+  --primary: #176b9b;
+  --primary-hover: #12577e;
+  --primary-contrast: #fff;
   --green: #16865a;
   --blue: #2476b8;
   --amber: #a86d09;
@@ -30,6 +31,9 @@
   --border-strong: #505963;
   --text: #e7eaee;
   --muted: #a3abb4;
+  --primary: #5ba9d6;
+  --primary-hover: #76b9df;
+  --primary-contrast: #101b23;
   --shadow: 0 16px 44px rgba(0, 0, 0, .38);
 }
 
@@ -104,7 +108,7 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
 .icon-button.success { color: var(--green); }
 .icon-button.active { color: var(--primary); background: color-mix(in srgb, var(--primary) 9%, var(--surface)); border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
 .command-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 11px; white-space: nowrap; }
-.command-button.primary { color: #fff; border-color: var(--primary); background: var(--primary); }
+.command-button.primary { color: var(--primary-contrast); border-color: var(--primary); background: var(--primary); }
 .command-button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 .command-button.full { width: 100%; }
 .button { padding: 0 14px; }
@@ -155,7 +159,7 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
 .check-cell input { width: 15px; min-height: 15px; accent-color: var(--primary); }
 .numeric { text-align: right !important; font-variant-numeric: tabular-nums; }
 .name-cell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
-.active-flag { display: inline-block; margin-right: 7px; padding: 2px 5px; border-radius: 3px; color: #fff; background: var(--primary); font-size: 9px; font-weight: 700; }
+.active-flag { display: inline-block; margin-right: 7px; padding: 2px 5px; border-radius: 3px; color: var(--primary-contrast); background: var(--primary); font-size: 9px; font-weight: 700; }
 .protocol { display: inline-block; min-width: 56px; padding: 3px 5px; border-radius: 3px; color: #fff; text-align: center; font-size: 10px; font-weight: 700; }
 .protocol-vless { background: #317a5e; }.protocol-vmess { background: #376ea4; }.protocol-trojan { background: #7b4ea3; }
 .protocol-shadowsocks { background: #b26a2f; }.protocol-socks { background: #596774; }.protocol-http { background: #25849b; }.protocol-custom { background: #74474b; }
@@ -223,7 +227,8 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
 .subscription-item { min-height: 61px; display: flex; align-items: center; gap: 9px; padding: 8px 9px; border: 1px solid var(--border); border-radius: 5px; }
 .subscription-main { min-width: 0; flex: 1; }
 .subscription-main strong, .subscription-main p, .subscription-main small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.subscription-main p { margin: 3px 0 0; color: var(--muted); font-size: 10px; }.subscription-main small { margin-top: 3px; color: var(--danger); }
+.subscription-main p { margin: 3px 0 0; color: var(--muted); font-size: 10px; }.subscription-main small { margin-top: 3px; color: var(--muted); }
+.subscription-main small.error { color: var(--danger); }
 .routing-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
 .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
 .segmented button { min-height: 32px; border: 0; border-right: 1px solid var(--border); padding: 0 12px; background: var(--surface); cursor: pointer; }
@@ -255,6 +260,7 @@ code, .mono, .log-view, .config-view, .code-input { font-family: "SFMono-Regular
   .search-box { width: min(230px, 45vw); }
   .selection-actions > span { display: none; }
   .profile-table { min-width: 960px; }
+  .profile-table .empty-state { position: sticky; left: 0; width: calc(100vw - 18px); }
   .desktop-status { display: none !important; }
   .subscription-layout { grid-template-columns: 1fr; }
 }
