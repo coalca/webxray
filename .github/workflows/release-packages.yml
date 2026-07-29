@@ -190,7 +190,7 @@ jobs:
           $env:WEBXRAY_NO_BROWSER = '1'
           $portableToken = (& $command token).Trim()
           try {
-            & $command -s install
+            $installOutput = & $command -s install
             if ($LASTEXITCODE -ne 0) { throw 'Service installation failed' }
             $token = (& $command -s token).Trim()
             if ($token -eq $portableToken) { throw 'Portable and service modes unexpectedly share an access token' }

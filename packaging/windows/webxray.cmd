@@ -106,12 +106,12 @@ call :secure-service-data
 exit /b %ERRORLEVEL%
 
 :secure-service-data
-icacls "%WEBXRAY_SERVICE_DATA_DIR%" /grant:r "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F" /T /C >nul
+icacls "%WEBXRAY_SERVICE_DATA_DIR%" /grant:r "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F" >nul
 if errorlevel 1 (
   echo Could not grant service data access to SYSTEM and Administrators.
   exit /b 1
 )
-icacls "%WEBXRAY_SERVICE_DATA_DIR%" /inheritance:r /T /C >nul
+icacls "%WEBXRAY_SERVICE_DATA_DIR%" /inheritance:r >nul
 if errorlevel 1 (
   echo Could not protect the service data directory.
   exit /b 1

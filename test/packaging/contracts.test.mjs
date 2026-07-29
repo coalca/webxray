@@ -74,6 +74,7 @@ test('Windows archive has distinct portable and service lifecycle entry points',
   assert.doesNotMatch(command, /robocopy|xcopy|Copying existing data/i);
   assert.match(command, /\*S-1-5-18:\(OI\)\(CI\)F/);
   assert.match(command, /\*S-1-5-32-544:\(OI\)\(CI\)F/);
+  assert.doesNotMatch(command, /icacls[^\r\n]+\/T/i);
   assert.match(command, /"%~f0" -s url/);
   assert.match(service, /WEBXRAY_DISTRIBUTION" value="windows-service/);
   assert.match(service, /WEBXRAY_HOST" value="127\.0\.0\.1/);
