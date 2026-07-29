@@ -44,11 +44,12 @@ if not "%ERRORLEVEL%"=="0" (
 
 set "WEBXRAY_DATA_DIR=%WEBXRAY_SERVICE_DATA_DIR%"
 set "WEBXRAY_DISTRIBUTION=windows-service"
+if /I "%~2"=="token" set "WEBXRAY_SERVICE_UTILITY=--print-token"
+if /I "%~2"=="url" set "WEBXRAY_SERVICE_UTILITY=--print-url"
+if /I "%~2"=="doctor" set "WEBXRAY_SERVICE_UTILITY=--doctor"
+if defined WEBXRAY_SERVICE_UTILITY goto service-utility
 if /I "%~2"=="install" goto service-install
 if /I "%~2"=="uninstall" goto service-uninstall
-if /I "%~2"=="token" goto service-token
-if /I "%~2"=="url" goto service-url
-if /I "%~2"=="doctor" goto service-doctor
 if /I "%~2"=="start" goto service-command
 if /I "%~2"=="stop" goto service-command
 if /I "%~2"=="restart" goto service-command
@@ -77,20 +78,11 @@ exit /b 0
 "%SERVICE%" uninstall
 exit /b %ERRORLEVEL%
 
-:service-token
+:service-utility
 call :prepare-service-data
 if errorlevel 1 exit /b 1
-goto token
-
-:service-url
-call :prepare-service-data
-if errorlevel 1 exit /b 1
-goto url
-
-:service-doctor
-call :prepare-service-data
-if errorlevel 1 exit /b 1
-goto doctor
+"%NODE%" "%LAUNCHER%" %WEBXRAY_SERVICE_UTILITY%
+exit /b %ERRORLEVEL%
 
 :service-command
 "%SERVICE%" %~2
