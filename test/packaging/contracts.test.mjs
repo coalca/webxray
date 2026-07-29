@@ -67,10 +67,12 @@ test('Windows archive has distinct portable and service lifecycle entry points',
   assert.match(direct, /webxray\.cmd" url/i);
   assert.match(install, /-s install/i);
   assert.match(uninstall, /-s uninstall/i);
-  assert.match(uninstall, /ProgramData%\\WebXray will be kept/i);
+  assert.match(uninstall, /permanently deletes %ProgramData%\\WebXray/i);
   assert.match(command, /WEBXRAY_HOST=127\.0\.0\.1/);
   assert.match(command, /WEBXRAY_PORTABLE_DATA_DIR=%~dp0data/);
   assert.match(command, /WEBXRAY_SERVICE_DATA_DIR=%ProgramData%\\WebXray/);
+  assert.match(command, /rmdir \/s \/q "%WEBXRAY_SERVICE_DATA_DIR%"/i);
+  assert.match(command, /Service data was permanently deleted/);
   assert.doesNotMatch(command, /robocopy|xcopy|Copying existing data/i);
   assert.match(command, /\*S-1-5-18:\(OI\)\(CI\)F/);
   assert.match(command, /\*S-1-5-32-544:\(OI\)\(CI\)F/);
@@ -86,6 +88,8 @@ test('Windows archive has distinct portable and service lifecycle entry points',
   assert.match(workflow, /& \$command -s install/);
   assert.match(workflow, /\$token -eq \$portableToken/);
   assert.match(workflow, /Get-Acl \$serviceData/);
+  assert.match(workflow, /Service data still exists after uninstall/);
+  assert.match(workflow, /Service uninstall removed portable data/);
 });
 
 test('documentation entry points exist', async () => {

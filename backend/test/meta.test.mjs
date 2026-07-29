@@ -3,10 +3,10 @@ import test from 'node:test';
 import { APP_VERSION, systemInfo } from '../server/meta.mjs';
 
 test('reports stable release and platform capabilities', () => {
-  assert.equal(APP_VERSION, '0.3.1');
+  assert.equal(APP_VERSION, '0.3.2');
   assert.deepEqual(systemInfo({ WEBXRAY_DISTRIBUTION: 'docker' }, 'linux', 'arm64'), {
     name: 'WebXray',
-    version: '0.3.1',
+    version: '0.3.2',
     platform: 'linux',
     arch: 'arm64',
     distribution: 'docker',

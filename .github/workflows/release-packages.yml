@@ -9,9 +9,9 @@ on:
       version:
         description: Package version without the v prefix
         required: true
-        default: 0.3.1
+        default: 0.3.2
       release_tag:
-        description: Existing tag to publish, for example v0.3.1 (leave empty to only build)
+        description: Existing tag to publish, for example v0.3.2 (leave empty to only build)
         required: false
         default: ''
 
@@ -214,8 +214,10 @@ jobs:
             }
             if ($state.system.distribution -ne 'windows-service') { throw 'Service distribution metadata is wrong' }
           } finally {
-            & $command -s uninstall | Out-Null
-            Remove-Item -Recurse -Force $serviceData -ErrorAction SilentlyContinue
+            $uninstallOutput = & $command -s uninstall
+            if ($LASTEXITCODE -ne 0) { throw 'Service uninstall failed' }
+            if (Test-Path $serviceData) { throw 'Service data still exists after uninstall' }
+            if (-not (Test-Path (Join-Path $portableData 'config.json'))) { throw 'Service uninstall removed portable data' }
           }
 
   release:

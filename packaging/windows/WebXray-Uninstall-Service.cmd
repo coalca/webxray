@@ -6,7 +6,8 @@ title WebXray - Uninstall Service
 echo WebXray service removal
 echo.
 echo This stops and removes the Windows service.
-echo Service data in %ProgramData%\WebXray will be kept.
+echo WARNING: This permanently deletes %ProgramData%\WebXray.
+echo Tokens, nodes, subscriptions, Xray, Geo files, configuration, and logs will be erased.
 echo.
 
 net session >nul 2>&1
@@ -22,7 +23,7 @@ call "%~dp0webxray.cmd" -s uninstall
 set "EXIT_CODE=%ERRORLEVEL%"
 echo.
 if "%EXIT_CODE%"=="0" (
-  echo WebXray service was removed. %ProgramData%\WebXray was not deleted.
+  echo WebXray service and all service data were removed.
 ) else (
   echo Service removal failed with error code %EXIT_CODE%.
 )

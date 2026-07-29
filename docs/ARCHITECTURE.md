@@ -23,7 +23,7 @@ docs/                    平台、安装、安全、升级和开发文档
 ## 测试层级
 
 1. Node 单元测试验证配置生成、解析、存储、运行资产和核心生命周期。
-2. 打包契约测试验证 Docker、Deb、Windows 入口和数据保留约束。
+2. 打包契约测试验证 Docker、Deb、Windows 入口和数据生命周期约束。
 3. Playwright 验证连接、订阅、节点、错误反馈、主题和移动布局。
 4. GHCR 流水线构建真实镜像并使用干净绑定目录执行冒烟测试。
 5. Release 流水线下载真实 Node、Xray 和 WinSW，构建并检查 Deb 与 Windows ZIP。

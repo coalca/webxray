@@ -302,7 +302,7 @@
         traffic: { upRate: 0, downRate: 0, upTotal: 0, downTotal: 0 }
       },
       tun: null,
-      system: { name: 'WebXray', version: '0.3.1', platform: '', arch: '', distribution: 'static', capabilities: {} }
+      system: { name: 'WebXray', version: '0.3.2', platform: '', arch: '', distribution: 'static', capabilities: {} }
     };
   }
 
@@ -412,7 +412,7 @@
         <div class="sidebar-core">
           <div><span class="status-led ${core.running ? 'online' : ''}"></span><span>${core.running ? '核心运行中' : '核心已停止'}</span></div>
           <p>${escapeHtml(core.version || core.lastError || '未检测到 Xray')}</p>
-          <small>${escapeHtml(distributionLabel(system))} · v${escapeHtml(system?.version || '0.3.1')}</small>
+          <small>${escapeHtml(distributionLabel(system))} · v${escapeHtml(system?.version || '0.3.2')}</small>
         </div>
       </aside>
     `;
@@ -518,7 +518,7 @@
         <span class="desktop-status">${escapeHtml(distributionLabel(system))} · ${escapeHtml(system?.platform || '')}/${escapeHtml(system?.arch || '')}</span>
         <span class="desktop-status">TUN ${tun?.ready ? '就绪' : system?.capabilities?.tun ? '未就绪' : '不支持'}</span>
         <span class="status-spacer"></span>
-        <span>v${escapeHtml(system?.version || '0.3.1')}</span>
+        <span>v${escapeHtml(system?.version || '0.3.2')}</span>
       </footer>
     `;
   }

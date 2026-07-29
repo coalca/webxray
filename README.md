@@ -44,7 +44,7 @@ Compose 允许局域网访问 Web 页面，但 Mixed 代理端口只绑定宿主
 从 [GitHub Releases](https://github.com/coalca/webxray/releases) 下载对应架构的 Deb：
 
 ```bash
-sudo apt install ./webxray_0.3.1_amd64.deb
+sudo apt install ./webxray_0.3.2_amd64.deb
 sudo webxray token
 sudo webxray -s status
 ```
@@ -54,11 +54,11 @@ Deb 已内置所需 Node.js 运行时，不依赖系统中的 Node 版本。详�
 
 ### Windows
 
-下载 `webxray_0.3.1_windows_x64.zip` 并解压到固定目录：
+下载 `webxray_0.3.2_windows_x64.zip` 并解压到固定目录：
 
 - 双击 `WebXray-Run.cmd`：前台直接运行，关闭窗口即停止，不需要管理员权限。
 - 管理员运行 `WebXray-Install-Service.cmd`：安装为自动启动的 Windows 服务。
-- 管理员运行 `WebXray-Uninstall-Service.cmd`：移除服务，保留 `C:\ProgramData\WebXray`。
+- 管理员运行 `WebXray-Uninstall-Service.cmd`：移除服务并永久删除 `C:\ProgramData\WebXray`。
 
 Windows 版不会修改系统代理，也不提供 Linux TUN。详细说明见
 [Windows 安装说明](docs/install/windows.md)。

@@ -28,8 +28,9 @@ Windows 版是 x64 免安装 ZIP，不提供 MSI、NSIS 或安装向导。解压
 - 数据保存在 `C:\ProgramData\WebXray`，日志写入其中的 `logs` 并按大小滚动。
 - 数据目录只允许 SYSTEM 和本机管理员访问。
 
-移除服务时，以管理员身份运行 `WebXray-Uninstall-Service.cmd`。该操作保留
-`C:\ProgramData\WebXray`，重新安装后可以继续使用。
+移除服务时，以管理员身份运行 `WebXray-Uninstall-Service.cmd`。该操作会永久删除
+`C:\ProgramData\WebXray`，其中的令牌、节点、订阅、Xray、Geo 文件、配置和日志均不保留。
+需要数据时必须在卸载前通过页面导出备份。
 
 两种模式不共享也不自动复制数据，各自生成配置和访问令牌。默认 Web 和代理端口相同，
 因此不可同时运行。

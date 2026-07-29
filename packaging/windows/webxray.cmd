@@ -74,9 +74,16 @@ if /I not "%WEBXRAY_NO_BROWSER%"=="1" start "" "%WEBXRAY_URL%"
 exit /b 0
 
 :service-uninstall
-"%SERVICE%" stop
+"%SERVICE%" stop >nul 2>&1
 "%SERVICE%" uninstall
-exit /b %ERRORLEVEL%
+if errorlevel 1 exit /b 1
+if exist "%WEBXRAY_SERVICE_DATA_DIR%" rmdir /s /q "%WEBXRAY_SERVICE_DATA_DIR%"
+if exist "%WEBXRAY_SERVICE_DATA_DIR%" (
+  echo Service was removed, but its data directory could not be deleted: %WEBXRAY_SERVICE_DATA_DIR%
+  exit /b 1
+)
+echo Service data was permanently deleted: %WEBXRAY_SERVICE_DATA_DIR%
+exit /b 0
 
 :service-utility
 call :prepare-service-data
