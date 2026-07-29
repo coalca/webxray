@@ -10,10 +10,10 @@
   <env name="NODE_ENV" value="production" />
   <env name="WEBXRAY_HOST" value="127.0.0.1" />
   <env name="WEBXRAY_DISTRIBUTION" value="windows-service" />
-  <env name="WEBXRAY_DATA_DIR" value="%BASE%\data" />
+  <env name="WEBXRAY_DATA_DIR" value="%ProgramData%\WebXray" />
   <env name="WEBXRAY_FRONTEND_DIR" value="%BASE%\app\frontend" />
   <env name="WEBXRAY_BUNDLED_XRAY_DIR" value="%BASE%\defaults\xray" />
-  <logpath>%BASE%\data\logs</logpath>
+  <logpath>%ProgramData%\WebXray\logs</logpath>
   <log mode="roll-by-size">
     <sizeThreshold>10240</sizeThreshold>
     <keepFiles>4</keepFiles>

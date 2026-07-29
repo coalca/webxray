@@ -8,7 +8,7 @@ WebXray 所需 Node.js，系统无需预装 Node。TUN 需要 Linux 内核提供
 ## 安装
 
 ```bash
-sudo apt install ./webxray_0.3.0_amd64.deb
+sudo apt install ./webxray_0.3.1_amd64.deb
 sudo webxray token
 sudo webxray -s status
 ```

@@ -13,7 +13,7 @@
 | WebXray 开机自启 | Docker 重启策略 | Docker 重启策略 | systemd | 不支持 | Windows SCM |
 | Web 服务默认监听 | 宿主 `0.0.0.0:3000` | 宿主网络 `0.0.0.0:3000` | `0.0.0.0:3000` | `127.0.0.1` | `127.0.0.1` |
 | Mixed 代理默认监听 | 容器内 `0.0.0.0`，宿主映射限制为本机 | 宿主网络 `0.0.0.0` | `127.0.0.1` | `127.0.0.1` | `127.0.0.1` |
-| 数据持久化 | `/data` 卷 | `/data` 卷 | `/var/lib/webxray` | 解压目录 `data` | 解压目录 `data` |
+| 数据持久化 | `/data` 卷 | `/data` 卷 | `/var/lib/webxray` | 解压目录 `data` | `C:\ProgramData\WebXray` |
 | 内置 Node.js | 容器内置 | 容器内置 | Deb 内置 | ZIP 内置 | ZIP 内置 |
 | 内置 Xray 与 Geo 数据 | 支持 | 支持 | 支持 | 支持 | 支持 |
 
@@ -44,6 +44,7 @@ Geo 文件和用户状态位于 `/var/lib/webxray`。TUN 仍依赖宿主内核�
 
 ## Windows 边界
 
-Windows ZIP 为 x64 免安装包。直接运行模式属于当前登录用户；服务模式由 Windows Service
-Control Manager 管理并默认以服务账户运行。两种模式共用同一个 `data`，不可同时启动。
+Windows ZIP 为 x64 免安装包。直接运行模式属于当前登录用户，数据跟随解压目录；服务模式
+由 Windows Service Control Manager 管理并默认以服务账户运行，数据位于
+`C:\ProgramData\WebXray`。两种模式的数据彼此独立，但默认端口相同，仍不可同时启动。
 Web 页面和代理默认仅监听本机，Windows 版不提供 TUN 自动路由，也不自动设置系统代理。

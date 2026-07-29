@@ -6,6 +6,7 @@ title WebXray - Install Service
 echo WebXray service mode
 echo.
 echo This installs WebXray as an automatic Windows service.
+echo Service data will be stored in %ProgramData%\WebXray.
 echo Stop any directly running WebXray window before continuing.
 echo.
 
@@ -23,6 +24,7 @@ set "EXIT_CODE=%ERRORLEVEL%"
 echo.
 if "%EXIT_CODE%"=="0" (
   echo WebXray is installed and running as a Windows service.
+  echo Service data: %ProgramData%\WebXray
 ) else (
   echo Service installation failed with error code %EXIT_CODE%.
 )

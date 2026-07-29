@@ -52,13 +52,14 @@ test('Deb package embeds Node and keeps state outside application files', async 
 });
 
 test('Windows archive has distinct portable and service lifecycle entry points', async () => {
-  const [builder, direct, install, uninstall, command, service] = await Promise.all([
+  const [builder, direct, install, uninstall, command, service, workflow] = await Promise.all([
     read('packaging/build-windows.sh'),
     read('packaging/windows/WebXray-Run.cmd'),
     read('packaging/windows/WebXray-Install-Service.cmd'),
     read('packaging/windows/WebXray-Uninstall-Service.cmd'),
     read('packaging/windows/webxray.cmd'),
-    read('packaging/windows/WebXrayService.xml')
+    read('packaging/windows/WebXrayService.xml'),
+    read('.github/workflows/release-packages.yml')
   ]);
   assert.match(builder, /WebXray-Uninstall-Service\.cmd/);
   assert.match(builder, /cp -R "\$root_dir\/docs"/);
@@ -66,10 +67,22 @@ test('Windows archive has distinct portable and service lifecycle entry points',
   assert.match(direct, /webxray\.cmd" url/i);
   assert.match(install, /-s install/i);
   assert.match(uninstall, /-s uninstall/i);
-  assert.match(uninstall, /data folder will be kept/i);
+  assert.match(uninstall, /ProgramData%\\WebXray will be kept/i);
   assert.match(command, /WEBXRAY_HOST=127\.0\.0\.1/);
+  assert.match(command, /WEBXRAY_PORTABLE_DATA_DIR=%~dp0data/);
+  assert.match(command, /WEBXRAY_SERVICE_DATA_DIR=%ProgramData%\\WebXray/);
+  assert.doesNotMatch(command, /robocopy|xcopy|Copying existing data/i);
+  assert.match(command, /\*S-1-5-18:\(OI\)\(CI\)F/);
+  assert.match(command, /\*S-1-5-32-544:\(OI\)\(CI\)F/);
+  assert.match(command, /"%~f0" -s url/);
   assert.match(service, /WEBXRAY_DISTRIBUTION" value="windows-service/);
   assert.match(service, /WEBXRAY_HOST" value="127\.0\.0\.1/);
+  assert.match(service, /WEBXRAY_DATA_DIR" value="%ProgramData%\\WebXray/);
+  assert.match(service, /<logpath>%ProgramData%\\WebXray\\logs<\/logpath>/);
+  assert.doesNotMatch(service, /%BASE%\\data/);
+  assert.match(workflow, /& \$command -s install/);
+  assert.match(workflow, /\$token -eq \$portableToken/);
+  assert.match(workflow, /Get-Acl \$serviceData/);
 });
 
 test('documentation entry points exist', async () => {

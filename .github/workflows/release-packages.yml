@@ -9,9 +9,9 @@ on:
       version:
         description: Package version without the v prefix
         required: true
-        default: 0.3.0
+        default: 0.3.1
       release_tag:
-        description: Existing tag to publish, for example v0.3.0 (leave empty to only build)
+        description: Existing tag to publish, for example v0.3.1 (leave empty to only build)
         required: false
         default: ''
 
@@ -141,16 +141,22 @@ jobs:
         shell: pwsh
         run: |
           $root = (Resolve-Path extracted\WebXray).Path
+          $command = Join-Path $root 'webxray.cmd'
           $node = Join-Path $root 'runtime\node.exe'
           $launcher = Join-Path $root 'app\server\launcher.mjs'
-          $env:WEBXRAY_DATA_DIR = Join-Path $root 'portable-test-data'
+          $portableData = Join-Path $root 'data'
+          $env:WEBXRAY_DATA_DIR = $portableData
           $env:WEBXRAY_FRONTEND_DIR = Join-Path $root 'app\frontend'
           $env:WEBXRAY_BUNDLED_XRAY_DIR = Join-Path $root 'defaults\xray'
           $env:WEBXRAY_DISTRIBUTION = 'windows-portable'
           $env:WEBXRAY_HOST = '127.0.0.1'
           $env:WEBXRAY_PORT = '3390'
-          $token = (& $node $launcher --print-token).Trim()
+          $token = (& $command token).Trim()
           if ($token.Length -lt 32) { throw 'Portable token was not generated' }
+          $doctor = ((& $command doctor) -join "`n") | ConvertFrom-Json
+          if ([IO.Path]::GetFullPath($doctor.dataDir) -ne [IO.Path]::GetFullPath($portableData)) {
+            throw "Portable data is not in the application directory: $($doctor.dataDir)"
+          }
           $process = Start-Process -FilePath $node -ArgumentList "`"$launcher`"" -PassThru -NoNewWindow
           try {
             for ($attempt = 1; $attempt -le 30; $attempt++) {
@@ -174,21 +180,32 @@ jobs:
         run: |
           $root = (Resolve-Path extracted\WebXray).Path
           $command = Join-Path $root 'webxray.cmd'
-          $service = Join-Path $root 'WebXrayService.exe'
+          $portableData = Join-Path $root 'data'
+          $serviceData = Join-Path $env:ProgramData 'WebXray'
           Remove-Item Env:WEBXRAY_DATA_DIR -ErrorAction SilentlyContinue
           Remove-Item Env:WEBXRAY_FRONTEND_DIR -ErrorAction SilentlyContinue
           Remove-Item Env:WEBXRAY_BUNDLED_XRAY_DIR -ErrorAction SilentlyContinue
-          $env:WEBXRAY_PORT = '3391'
-          $token = (& $command token).Trim()
+          Remove-Item Env:WEBXRAY_PORT -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force $serviceData -ErrorAction SilentlyContinue
+          $env:WEBXRAY_NO_BROWSER = '1'
+          $portableToken = (& $command token).Trim()
           try {
-            & $service install
+            & $command -s install
             if ($LASTEXITCODE -ne 0) { throw 'Service installation failed' }
-            & $service start
-            if ($LASTEXITCODE -ne 0) { throw 'Service start failed' }
+            $token = (& $command -s token).Trim()
+            if ($token -eq $portableToken) { throw 'Portable and service modes unexpectedly share an access token' }
+            $doctor = ((& $command -s doctor) -join "`n") | ConvertFrom-Json
+            if ([IO.Path]::GetFullPath($doctor.dataDir) -ne [IO.Path]::GetFullPath($serviceData)) {
+              throw "Service data is not in ProgramData: $($doctor.dataDir)"
+            }
+            if (-not (Test-Path (Join-Path $portableData 'config.json'))) { throw 'Portable data was removed by service installation' }
+            if (-not (Test-Path (Join-Path $serviceData 'config.json'))) { throw 'Service config was not created' }
+            if (-not (Get-Acl $serviceData).AreAccessRulesProtected) { throw 'Service data still inherits broad permissions' }
+            $servicePort = (Get-Content (Join-Path $serviceData 'config.json') -Raw | ConvertFrom-Json).webPort
             for ($attempt = 1; $attempt -le 30; $attempt++) {
               try {
                 $headers = @{ Authorization = "Bearer $token" }
-                $state = Invoke-RestMethod http://127.0.0.1:3391/api/state -Headers $headers
+                $state = Invoke-RestMethod "http://127.0.0.1:$servicePort/api/state" -Headers $headers
                 if ($state.ok) { break }
               } catch {
                 if ($attempt -eq 30) { throw }
@@ -197,8 +214,8 @@ jobs:
             }
             if ($state.system.distribution -ne 'windows-service') { throw 'Service distribution metadata is wrong' }
           } finally {
-            & $service stop | Out-Null
-            & $service uninstall | Out-Null
+            & $command -s uninstall | Out-Null
+            Remove-Item -Recurse -Force $serviceData -ErrorAction SilentlyContinue
           }
 
   release:
